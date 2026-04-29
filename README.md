@@ -1,4 +1,4 @@
-# 💰 Sistema Bancário (Nome do Projeto)
+# 💰 Sistema Bancário (FlowBank)
 
 ## 📌 Descrição
 
