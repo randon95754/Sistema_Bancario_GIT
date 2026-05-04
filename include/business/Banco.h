@@ -17,7 +17,6 @@ public:
 
     double consultarSaldo(int numero);
 
-    void transferir(int origem, int destino, double valor);
 };
 
 #endif
