@@ -25,16 +25,6 @@ Conta* Banco::buscarConta(int numero) {
     return nullptr;
 }
 
-void Banco::transferir(int origem, int destino, double valor) {
-    Conta* contaOrigem = buscarConta(origem);
-    Conta* contaDestino = buscarConta(destino);
-
-    if (contaOrigem != nullptr && contaDestino != nullptr) {
-        contaOrigem->debitar(valor);
-        contaDestino->creditar(valor);
-    }
-}
-
 
 double Banco::consultarSaldo(int numero) {
     Conta* conta = buscarConta(numero);
