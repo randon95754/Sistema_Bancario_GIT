@@ -7,7 +7,6 @@ private:
     double saldo;
     
 public:
-    Conta();
     Conta(int numero);
 
     int getNumero();
