@@ -18,14 +18,20 @@ double Conta::getSaldo() {
     return saldo;
 }
 
-void Conta::creditar(double valor) {
-    saldo += valor;
+bool Conta::creditar(double valor) {
+    if (valor > 0) {
+        saldo += valor;
+        return true;
+    }
+
+    return false;
 }
 
 bool Conta::debitar(double valor) {
-    if (saldo >= valor) {
+    if (valor > 0 && saldo >= valor) {
         saldo -= valor;
         return true;
     }
+
     return false;
 }
