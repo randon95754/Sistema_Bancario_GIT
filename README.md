@@ -62,7 +62,40 @@ Link do projeto:
 
 ---
 
-## 📌 Observações
+## � Como Executar
+
+### Pré-requisitos
+- Compilador C++: g++ (disponível no MinGW ou MSYS2 no Windows)
+- Sistema operacional: Windows, Linux ou macOS
+
+### Passos para Compilar e Executar
+
+1. **Clone o repositório** (se ainda não clonou):
+   ```
+   git clone https://github.com/randon95754/Sistema_Bancario_GIT.git
+   cd Sistema_Bancario_GIT
+   ```
+
+2. **Compile o projeto**:
+   ```
+   g++ -I include src/main/main.cpp src/business/Banco.cpp src/model/Conta.cpp -o banco
+   ```
+
+3. **Execute o programa**:
+   ```
+   ./banco
+   ```
+
+   No Windows, se usar PowerShell ou Command Prompt, execute:
+   ```
+   .\banco.exe
+   ```
+
+O programa irá executar e exibir saídas no console, como saldos das contas.
+
+---
+
+## �📌 Observações
 
 * Todas as alterações são vinculadas a *issues* (tarefas)
 * O projeto prioriza boas práticas de versionamento, não a complexidade da aplicação
