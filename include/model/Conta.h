@@ -14,7 +14,7 @@ public:
     double getSaldo();
 
     void creditar(double valor); 
-    void debitar(double valor);  
+    bool debitar(double valor);  
     void transferir(int origem, int destino, double valor);
 };
 
