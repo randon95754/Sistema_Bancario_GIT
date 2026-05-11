@@ -1,6 +1,7 @@
 #include <iostream>
 #include "business/Banco.h"
 #include "model/ContaBonus.h"
+#include "model/ContaPoupanca.h"
 
 int main() {
     Banco banco;
@@ -72,6 +73,28 @@ int main() {
     banco.creditar(4, 250);
     std::cout << "Saldo: R$ " << banco.consultarSaldo(4) << std::endl;
     std::cout << "Pontuacao: " << contaBonus4->getPontuacao() << " pontos (esperado: 14)" << std::endl;
+
+
+
+    std::cout << "\n========== TESTE CONTA POUPANCA ==========\n" 
+          << std::endl;
+
+    ContaPoupanca poupanca(5);
+
+    poupanca.creditar(200);
+
+    std::cout << "Saldo inicial: R$ "
+          << poupanca.getSaldo()
+          << std::endl;
+
+    std::cout << "Aplicando juros de 10.5%" 
+          << std::endl;
+
+    poupanca.renderJuros(10.5);
+
+    std::cout << "Saldo final: R$ "
+          << poupanca.getSaldo()
+          << std::endl;
 
     return 0;
 }
