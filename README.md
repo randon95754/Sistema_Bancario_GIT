@@ -33,6 +33,35 @@ O sistema irá contemplar operações básicas de contas bancárias, com foco na
 
 ---
 
+## 🚀 Como Executar
+
+### Pré-requisitos
+
+- Compilador C++ (g++) instalado no sistema.
+- Sistema operacional Windows/Linux/Mac.
+
+### Passos para Execução
+
+1. **Clone o repositório:**
+   ```
+   git clone https://github.com/randon95754/Sistema_Bancario_GIT.git
+   cd Sistema_Bancario_GIT
+   ```
+
+2. **Compile o projeto:**
+   ```
+   g++ -I include src/main/main.cpp src/business/Banco.cpp src/model/Conta.cpp -o banco.exe
+   ```
+
+3. **Execute o programa:**
+   ```
+   ./banco.exe
+   ```
+
+O programa irá executar operações bancárias básicas e exibir os saldos no console, incluindo testes para operações com saldo insuficiente.
+
+---
+
 ## 🌿 Estratégia de Branches
 
 O projeto segue o padrão **GitLab Flow**, com as seguintes branches:

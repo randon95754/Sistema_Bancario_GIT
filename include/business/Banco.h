@@ -13,11 +13,11 @@ public:
     Conta* buscarConta(int numero);
 
     void creditar(int numero, double valor);
-    void debitar(int numero, double valor);
+    bool debitar(int numero, double valor);
 
     double consultarSaldo(int numero);
 
-    void transferir(int origem, int destino, double valor);
+    bool transferir(int origem, int destino, double valor);
 };
 
 #endif
