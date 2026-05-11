@@ -22,6 +22,10 @@ void Conta::creditar(double valor) {
     saldo += valor;
 }
 
-void Conta::debitar(double valor) {
-    saldo -= valor;
+bool Conta::debitar(double valor) {
+    if (saldo >= valor) {
+        saldo -= valor;
+        return true;
+    }
+    return false;
 }
