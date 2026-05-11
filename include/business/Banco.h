@@ -12,10 +12,12 @@ public:
     ~Banco();
     
     void criarConta(int numero);
+
     void criarContaBonus(int numero);
     Conta* buscarConta(int numero);
 
-    void creditar(int numero, double valor);
+    bool creditar(int numero, double valor);
+
     bool debitar(int numero, double valor);
 
     double consultarSaldo(int numero);

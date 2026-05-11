@@ -8,18 +8,23 @@ Banco::~Banco() {
     contas.clear();
 }
 
-void Banco::creditar(int numero, double valor) {
+bool Banco::creditar(int numero, double valor) {
     Conta* conta = buscarConta(numero);
+
     if (conta != nullptr) {
-        conta->creditar(valor);
+        return conta->creditar(valor);
     }
+
+    return false;
 }
 
 bool Banco::debitar(int numero, double valor) {
     Conta* conta = buscarConta(numero);
+
     if (conta != nullptr) {
         return conta->debitar(valor);
     }
+
     return false;
 }
 
@@ -35,6 +40,7 @@ Conta* Banco::buscarConta(int numero) {
     if (contas.find(numero) != contas.end()) {
         return contas[numero];
     }
+
     return nullptr;
 }
 
@@ -54,14 +60,16 @@ bool Banco::transferir(int origem, int destino, double valor) {
             return true;
         }
     }
+
     return false;
 }
 
-
 double Banco::consultarSaldo(int numero) {
     Conta* conta = buscarConta(numero);
+
     if (conta != nullptr) {
         return conta->getSaldo();
     }
+
     return 0.0;
 }
