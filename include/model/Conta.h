@@ -14,8 +14,9 @@ public:
     int getNumero();
     double getSaldo();
 
-    virtual bool creditar(double valor);
-    virtual bool debitar(double valor);
+    virtual void creditar(double valor); 
+    virtual bool debitar(double valor);  
+    void transferir(int origem, int destino, double valor);
 };
 
 #endif

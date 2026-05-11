@@ -1,4 +1,12 @@
 #include "business/Banco.h"
+#include "model/ContaBonus.h"
+
+Banco::~Banco() {
+    for (auto& pair : contas) {
+        delete pair.second;
+    }
+    contas.clear();
+}
 
 bool Banco::creditar(int numero, double valor) {
     Conta* conta = buscarConta(numero);
@@ -21,12 +29,16 @@ bool Banco::debitar(int numero, double valor) {
 }
 
 void Banco::criarConta(int numero) {
-    contas.emplace(numero, Conta(numero));
+    contas[numero] = new Conta(numero);
+}
+
+void Banco::criarContaBonus(int numero) {
+    contas[numero] = new ContaBonus(numero);
 }
 
 Conta* Banco::buscarConta(int numero) {
     if (contas.find(numero) != contas.end()) {
-        return &contas[numero];
+        return contas[numero];
     }
 
     return nullptr;
@@ -36,13 +48,17 @@ bool Banco::transferir(int origem, int destino, double valor) {
     Conta* contaOrigem = buscarConta(origem);
     Conta* contaDestino = buscarConta(destino);
 
-    if (contaOrigem != nullptr &&
-        contaDestino != nullptr &&
-        valor > 0 &&
-        contaOrigem->debitar(valor)) {
-
-        contaDestino->creditar(valor);
-        return true;
+    if (contaOrigem != nullptr && contaDestino != nullptr) {
+        if (contaOrigem->debitar(valor)) {
+            // Verifica se a conta destino é uma ContaBonus
+            ContaBonus* contaBonusDestino = dynamic_cast<ContaBonus*>(contaDestino);
+            if (contaBonusDestino != nullptr) {
+                contaBonusDestino->receberTransferencia(valor);
+            } else {
+                contaDestino->creditar(valor);
+            }
+            return true;
+        }
     }
 
     return false;
