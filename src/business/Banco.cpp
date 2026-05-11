@@ -7,11 +7,12 @@ void Banco::creditar(int numero, double valor) {
     }
 }
 
-void Banco::debitar(int numero, double valor) {
+bool Banco::debitar(int numero, double valor) {
     Conta* conta = buscarConta(numero);
     if (conta != nullptr) {
-        conta->debitar(valor);
+        return conta->debitar(valor);
     }
+    return false;
 }
 
 void Banco::criarConta(int numero) {
@@ -25,14 +26,17 @@ Conta* Banco::buscarConta(int numero) {
     return nullptr;
 }
 
-void Banco::transferir(int origem, int destino, double valor) {
+bool Banco::transferir(int origem, int destino, double valor) {
     Conta* contaOrigem = buscarConta(origem);
     Conta* contaDestino = buscarConta(destino);
 
     if (contaOrigem != nullptr && contaDestino != nullptr) {
-        contaOrigem->debitar(valor);
-        contaDestino->creditar(valor);
+        if (contaOrigem->debitar(valor)) {
+            contaDestino->creditar(valor);
+            return true;
+        }
     }
+    return false;
 }
 
 
