@@ -2,20 +2,20 @@
 #define CONTA_H
 
 class Conta {
-private:
+protected:
     int numero;
     double saldo;
     
 public:
     Conta();
     Conta(int numero);
+    virtual ~Conta() = default;
 
     int getNumero();
     double getSaldo();
 
-    void creditar(double valor); 
-    bool debitar(double valor);  
-    void transferir(int origem, int destino, double valor);
+    virtual bool creditar(double valor);
+    virtual bool debitar(double valor);
 };
 
 #endif
