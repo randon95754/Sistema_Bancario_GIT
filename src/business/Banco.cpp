@@ -1,5 +1,6 @@
 #include "business/Banco.h"
 #include "model/ContaBonus.h"
+#include "model/ContaPoupanca.h"
 
 Banco::~Banco() {
     for (auto& pair : contas) {
@@ -72,4 +73,8 @@ double Banco::consultarSaldo(int numero) {
     }
 
     return 0.0;
+}
+
+void Banco::criarContaPoupanca(int numero, double saldoInicial) {
+    contas[numero] = new ContaPoupanca(numero, saldoInicial);
 }

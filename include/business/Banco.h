@@ -13,6 +13,8 @@ public:
     
     void criarConta(int numero);
 
+    void criarContaPoupanca(int numero, double saldoInicial);
+
     void criarContaBonus(int numero);
     Conta* buscarConta(int numero);
 

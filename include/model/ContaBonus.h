@@ -13,7 +13,7 @@ public:
 
     int getPontuacao();
     
-    void creditar(double valor) override;
+    bool creditar(double valor) override;
     void receberTransferencia(double valor);
 };
 
