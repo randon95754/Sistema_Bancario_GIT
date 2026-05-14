@@ -13,13 +13,14 @@ int ContaBonus::getPontuacao() {
 }
 
 // Depositar dinheiro na conta e ganhar pontos
-void ContaBonus::creditar(double valor) {
-    Conta::creditar(valor);
-    // 1 ponto para cada R$ 100,00 de depósito
-    int pontosGanhos = (int)(valor / 100.0);
-    pontuacao += pontosGanhos;
-}
+bool ContaBonus::creditar(double valor) {
+    if (Conta::creditar(valor)) {
+        pontuacao += valor / 100;
+        return true;
+    }
 
+    return false;
+}
 //Receber Transferencia e ganhar pontos
 void ContaBonus::receberTransferencia(double valor) {
     Conta::creditar(valor);

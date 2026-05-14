@@ -16,6 +16,7 @@ int main() {
 
     // Transferência
     banco.transferir(1, 2, 40);
+    banco.criarContaPoupanca(10, 500); // Criar conta poupança com saldo inicial de 500
 
     // Consultar saldo
     std::cout << "Saldo conta 1: " << banco.consultarSaldo(1) << std::endl;
@@ -79,7 +80,7 @@ int main() {
     std::cout << "\n========== TESTE CONTA POUPANCA ==========\n" 
           << std::endl;
 
-    ContaPoupanca poupanca(5);
+    ContaPoupanca poupanca(5, 200);
 
     poupanca.creditar(200);
 
