@@ -76,6 +76,33 @@ int main() {
     std::cout << "Pontuacao: " << contaBonus4->getPontuacao() << " pontos (esperado: 14)" << std::endl;
 
 
+    std::cout << "\n========== TESTE LIMITE NEGATIVO ==========\n" << std::endl;
+
+banco.criarConta(50);
+
+banco.creditar(50, 100);
+
+if (banco.debitar(50, 900)) {
+    std::cout << "Debito permitido" << std::endl;
+} else {
+    std::cout << "Debito bloqueado" << std::endl;
+}
+
+std::cout << "Saldo atual: "
+          << banco.consultarSaldo(50)
+          << std::endl;
+
+if (banco.debitar(50, 500)) {
+    std::cout << "Debito permitido" << std::endl;
+} else {
+    std::cout << "Debito bloqueado corretamente" << std::endl;
+}
+
+std::cout << "Saldo atual: "
+          << banco.consultarSaldo(50)
+          << std::endl;
+
+    
 
     std::cout << "\n========== TESTE CONTA POUPANCA ==========\n" 
           << std::endl;
