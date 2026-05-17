@@ -20,10 +20,10 @@ void ContaBonus::creditar(double valor) {
     pontuacao += pontosGanhos;
 }
 
-//Receber Transferencia e ganhar pontos
+// Receber transferência e ganhar pontos
 void ContaBonus::receberTransferencia(double valor) {
     Conta::creditar(valor);
-    // 1 ponto para cada R$ 200,00 recebidos em transferência
-    int pontosGanhos = (int)(valor / 200.0);
+    // 1 ponto para cada R$ 150,00 recebidos em transferência
+    int pontosGanhos = (int)(valor / 150.0);
     pontuacao += pontosGanhos;
 }
