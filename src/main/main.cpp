@@ -4,9 +4,9 @@
 int main() {
     Banco banco;
 
-    // Criar contas
-    banco.criarConta(1);
-    banco.criarConta(2);
+    // Criar contas com saldo inicial
+    banco.criarConta(1, 100.0);
+    banco.criarConta(2, 50.0);
 
     // Movimentações
     banco.creditar(1, 100);

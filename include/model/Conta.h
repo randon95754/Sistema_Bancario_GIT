@@ -9,6 +9,7 @@ protected:
 public:
     Conta();
     Conta(int numero);
+    Conta(int numero, double saldoInicial);
     virtual ~Conta() = default;
 
     int getNumero();

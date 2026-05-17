@@ -20,8 +20,8 @@ bool Banco::debitar(int numero, double valor) {
     return false;
 }
 
-void Banco::criarConta(int numero) {
-    contas.emplace(numero, Conta(numero));
+void Banco::criarConta(int numero, double saldoInicial) {
+    contas.emplace(numero, Conta(numero, saldoInicial));
 }
 
 Conta* Banco::buscarConta(int numero) {

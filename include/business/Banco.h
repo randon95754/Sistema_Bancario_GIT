@@ -9,7 +9,7 @@ private:
     std::map<int, Conta> contas;
 
 public:
-    void criarConta(int numero);
+    void criarConta(int numero, double saldoInicial);
 
     Conta* buscarConta(int numero);
 
