@@ -6,11 +6,14 @@
 
 class Banco {
 private:
-    std::map<int, Conta> contas;
+    std::map<int, Conta*> contas;
 
 public:
+    ~Banco();
+    
+    void criarConta(int numero);
     void criarConta(int numero, double saldoInicial);
-
+    void criarContaBonus(int numero);
     Conta* buscarConta(int numero);
 
     bool creditar(int numero, double valor);

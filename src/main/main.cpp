@@ -1,5 +1,7 @@
 #include <iostream>
 #include "business/Banco.h"
+#include "model/ContaBonus.h"
+#include "model/ContaPoupanca.h"
 
 int main() {
     Banco banco;
@@ -38,5 +40,60 @@ int main() {
     std::cout << "Saldo conta 1: " << banco.consultarSaldo(1) << std::endl;
     std::cout << "Saldo conta 2: " << banco.consultarSaldo(2) << std::endl;
 
+    // ========== TESTE CONTA BONUS ==========
+    std::cout << "\n========== TESTE CONTA BONUS ==========" << std::endl;
+    
+    // Criar contas bonus
+    banco.criarContaBonus(3);
+    banco.criarContaBonus(4);
+    
+    // Verificar pontuacao inicial
+    ContaBonus* contaBonus3 = dynamic_cast<ContaBonus*>(banco.buscarConta(3));
+    std::cout << "\nConta 3 (Bonus) criada - Pontuacao inicial: " << contaBonus3->getPontuacao() << " pontos" << std::endl;
+    
+    // Teste 1: Deposito de 540 = 5 pontos (1 ponto por 100)
+    std::cout << "\nTeste 1: Deposito de R$ 540,00 na conta 3" << std::endl;
+    banco.creditar(3, 540);
+    std::cout << "Saldo: R$ " << banco.consultarSaldo(3) << std::endl;
+    std::cout << "Pontuacao: " << contaBonus3->getPontuacao() << " pontos (esperado: 15)" << std::endl;
+    
+    // Teste 2: Transferencia recebida de 540 = 2 pontos (1 ponto por 200)
+    std::cout << "\nTeste 2: Transferencia de R$ 540,00 da conta 3 para conta 4" << std::endl;
+    banco.transferir(3, 4, 540);
+    ContaBonus* contaBonus4 = dynamic_cast<ContaBonus*>(banco.buscarConta(4));
+    
+    std::cout << "Saldo conta 3: R$ " << banco.consultarSaldo(3) << std::endl;
+    std::cout << "Pontuacao conta 3: " << contaBonus3->getPontuacao() << " pontos" << std::endl;
+    
+    std::cout << "Saldo conta 4: R$ " << banco.consultarSaldo(4) << std::endl;
+    std::cout << "Pontuacao conta 4: " << contaBonus4->getPontuacao() << " pontos (esperado: 12)" << std::endl;
+    
+    // Teste 3: Multiplos depositos
+    std::cout << "\nTeste 3: Deposito de R$ 250,00 na conta 4" << std::endl;
+    banco.creditar(4, 250);
+    std::cout << "Saldo: R$ " << banco.consultarSaldo(4) << std::endl;
+    std::cout << "Pontuacao: " << contaBonus4->getPontuacao() << " pontos (esperado: 14)" << std::endl;
+
+
+
+    std::cout << "\n========== TESTE CONTA POUPANCA ==========\n" 
+          << std::endl;
+
+    ContaPoupanca poupanca(5);
+
+    poupanca.creditar(200);
+
+    std::cout << "Saldo inicial: R$ "
+          << poupanca.getSaldo()
+          << std::endl;
+
+    std::cout << "Aplicando juros de 10.5%" 
+          << std::endl;
+
+    poupanca.renderJuros(10.5);
+
+    std::cout << "Saldo final: R$ "
+          << poupanca.getSaldo()
+          << std::endl;
     return 0;
 }
