@@ -91,8 +91,9 @@ Link do projeto:
    ```powershell
    curl -s -X POST http://localhost:8080/banco/conta/ -H "Content-Type: application/json" -d "{\"numero\":101,\"tipo\":\"bonus\"}"
    curl -s http://localhost:8080/banco/conta/101
+   curl -s http://localhost:8080/banco/conta/101/saldo
    ```
-   O primeiro comando cria uma conta; o segundo consulta essa conta.
+   O primeiro comando cria uma conta; o segundo consulta essa conta; o terceiro consulta o saldo da conta.
 
 
 Alternativa (MSVC/Visual Studio Developer Prompt):

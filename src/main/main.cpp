@@ -185,49 +185,49 @@ static std::string extractJsonString(const std::string& body, const std::string&
     return body.substr(start + 1, end - start - 1);
 }
 
-static bool parseAccountNumber(const std::string& path, int& numero) {
+static bool parseContaPath(const std::string& path, int& numero, std::string& action) {
     const std::string prefix = "/banco/conta";
     if (!startsWith(path, prefix)) {
         return false;
     }
+
     std::string tail = path.substr(prefix.size());
     if (tail.empty()) {
         return false;
     }
+
     if (tail[0] == '/') {
         tail = tail.substr(1);
-        size_t query = tail.find('?');
-        if (query != std::string::npos) {
-            tail = tail.substr(0, query);
-        }
-        if (tail.empty()) {
-            return false;
-        }
-        try {
-            numero = std::stoi(tail);
-            return true;
-        } catch (...) {
-            return false;
-        }
     }
-    if (tail[0] == '?') {
-        size_t pos = tail.find("numero=");
-        if (pos == std::string::npos) {
-            return false;
-        }
-        std::string value = tail.substr(pos + 7);
-        size_t end = value.find('&');
-        if (end != std::string::npos) {
-            value = value.substr(0, end);
-        }
-        try {
-            numero = std::stoi(value);
-            return true;
-        } catch (...) {
-            return false;
-        }
+
+    size_t query = tail.find('?');
+    if (query != std::string::npos) {
+        tail = tail.substr(0, query);
     }
-    return false;
+
+    if (tail.empty()) {
+        return false;
+    }
+
+    size_t slash = tail.find('/');
+    std::string numeroPart = (slash == std::string::npos) ? tail : tail.substr(0, slash);
+    if (numeroPart.empty()) {
+        return false;
+    }
+
+    try {
+        numero = std::stoi(numeroPart);
+    } catch (...) {
+        return false;
+    }
+
+    if (slash == std::string::npos) {
+        action.clear();
+    } else {
+        action = tail.substr(slash + 1);
+    }
+
+    return true;
 }
 
 int main() {
@@ -309,10 +309,17 @@ int main() {
 
         if (method == "GET" && startsWith(path, "/banco/conta")) {
             int numero;
-            if (!parseAccountNumber(path, numero)) {
+            std::string action;
+            if (!parseContaPath(path, numero, action)) {
                 status = "400 Bad Request";
                 responseBody = "{\"error\":\"numero invalido\"}";
-            } else {
+            } else if (action == "saldo") {
+                double saldo = banco.consultarSaldo(numero);
+                status = "200 OK";
+                std::ostringstream out;
+                out << "{\"numero\":" << numero << ",\"saldo\":" << saldo << "}";
+                responseBody = out.str();
+            } else if (action.empty()) {
                 ContaInfo info;
                 if (!banco.consultarDadosConta(numero, info)) {
                     status = "404 Not Found";
@@ -321,6 +328,9 @@ int main() {
                     status = "200 OK";
                     responseBody = toJson(info);
                 }
+            } else {
+                status = "404 Not Found";
+                responseBody = "{\"error\":\"Endpoint nao encontrado\"}";
             }
         } else if (method == "POST" && (path == "/banco/conta" || path == "/banco/conta/")) {
             int numero = extractJsonInt(body, "numero", -1);
