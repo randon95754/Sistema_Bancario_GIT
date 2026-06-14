@@ -266,8 +266,11 @@ int main() {
     }
 
     std::cout << "Servidor REST ativo em http://localhost:8080" << std::endl;
-    std::cout << "POST /banco/conta/   - cria conta" << std::endl;
-    std::cout << "GET  /banco/conta/{numero} - consulta conta" << std::endl;
+    std::cout << "POST /banco/conta/           - cria conta" << std::endl;
+    std::cout << "GET  /banco/conta/{numero}      - consulta conta" << std::endl;
+    std::cout << "GET  /banco/conta/{numero}/saldo - consulta saldo" << std::endl;
+    std::cout << "PUT  /banco/conta/{numero}/credito - credita conta" << std::endl;
+    std::cout << "PUT  /banco/conta/{numero}/debito  - debita conta" << std::endl;
 
     while (true) {
         SOCKET clientSocket = accept(listenSocket, nullptr, nullptr);
@@ -327,6 +330,44 @@ int main() {
                 } else {
                     status = "200 OK";
                     responseBody = toJson(info);
+                }
+            } else {
+                status = "404 Not Found";
+                responseBody = "{\"error\":\"Endpoint nao encontrado\"}";
+            }
+        } else if (method == "PUT" && startsWith(path, "/banco/conta")) {
+            int numero;
+            std::string action;
+            if (!parseContaPath(path, numero, action)) {
+                status = "400 Bad Request";
+                responseBody = "{\"error\":\"numero invalido\"}";
+            } else if (action == "credito") {
+                double valor = extractJsonDouble(body, "valor", 0.0);
+                if (valor <= 0.0) {
+                    status = "400 Bad Request";
+                    responseBody = "{\"error\":\"valor invalido\"}";
+                } else if (!banco.creditar(numero, valor)) {
+                    status = "404 Not Found";
+                    responseBody = "{\"error\":\"Conta nao encontrada\"}";
+                } else {
+                    status = "200 OK";
+                    std::ostringstream out;
+                    out << "{\"numero\":" << numero << ",\"valor\":" << valor << ",\"status\":\"creditado\"}";
+                    responseBody = out.str();
+                }
+            } else if (action == "debito") {
+                double valor = extractJsonDouble(body, "valor", 0.0);
+                if (valor <= 0.0) {
+                    status = "400 Bad Request";
+                    responseBody = "{\"error\":\"valor invalido\"}";
+                } else if (!banco.debitar(numero, valor)) {
+                    status = "404 Not Found";
+                    responseBody = "{\"error\":\"Conta nao encontrada ou saldo insuficiente\"}";
+                } else {
+                    status = "200 OK";
+                    std::ostringstream out;
+                    out << "{\"numero\":" << numero << ",\"valor\":" << valor << ",\"status\":\"debito realizado\"}";
+                    responseBody = out.str();
                 }
             } else {
                 status = "404 Not Found";
