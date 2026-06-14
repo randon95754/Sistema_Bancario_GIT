@@ -120,9 +120,27 @@ std::cout << "Saldo atual: "
 
     poupanca.renderJuros(10.5);
 
-    std::cout << "Saldo final: R$ "
-          << poupanca.getSaldo()
-          << std::endl;
+        std::cout << "Saldo final: R$ "
+              << poupanca.getSaldo()
+              << std::endl;
+
+    std::cout << "\n========== TESTE CONSULTA DE CONTA ==========\n"
+              << std::endl;
+
+    std::cout << "\n--- Conta Simples (Conta 1) ---" << std::endl;
+    std::cout << banco.consultarConta(1) << std::endl;
+
+    std::cout << "\n--- Conta Bonus (Conta 3) ---" << std::endl;
+    std::cout << banco.consultarConta(3) << std::endl;
+
+    std::cout << "\n--- Conta Bonus (Conta 4) ---" << std::endl;
+    std::cout << banco.consultarConta(4) << std::endl;
+
+    std::cout << "\n--- Conta Poupanca (Conta 10) ---" << std::endl;
+    std::cout << banco.consultarConta(10) << std::endl;
+
+    std::cout << "\n--- Conta Inexistente (999) ---" << std::endl;
+    std::cout << banco.consultarConta(999) << std::endl;
 
     return 0;
 }
