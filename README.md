@@ -79,13 +79,21 @@ Link do projeto:
 2. **Compile o projeto (g++)** — compila todos os arquivos fontes e coloca o binário em `bin/app.exe`:
    ```powershell
    mkdir -Force bin
-   g++ -std=c++17 -I include src/main/main.cpp src/business/Banco.cpp src/business/ServicoBanco.cpp src/model/Conta.cpp src/model/ContaBonus.cpp src/model/ContaPoupanca.cpp -o bin/app.exe
-   ```
+   g++ -std=c++17 -I include src/main/main.cpp src/business/Banco.cpp src/business/ServicoBanco.cpp src/model/Conta.cpp src/model/ContaBonus.cpp src/model/ContaPoupanca.cpp -o bin/app.exe -lws2_32
+   ```\
 
 3. **Execute o programa**:
    ```powershell
    .\bin\app.exe
+   ```\
+
+4. **Teste o servidor REST** (em outro terminal):
+   ```powershell
+   curl -s -X POST http://localhost:8080/banco/conta/ -H "Content-Type: application/json" -d "{\"numero\":101,\"tipo\":\"bonus\"}"
+   curl -s http://localhost:8080/banco/conta/101
    ```
+   O primeiro comando cria uma conta; o segundo consulta essa conta.
+
 
 Alternativa (MSVC/Visual Studio Developer Prompt):
    ```powershell

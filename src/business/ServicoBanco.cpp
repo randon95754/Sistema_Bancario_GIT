@@ -37,6 +37,11 @@ std::string ServicoBancoImpl::consultarConta(int numero) {
     return repo.consultarConta(numero);
 }
 
+bool ServicoBancoImpl::consultarDadosConta(int numero, ContaInfo& info) {
+    info = repo.consultarDadosConta(numero);
+    return info.existe;
+}
+
 int ServicoBancoImpl::obterPontuacao(int numero) {
     Conta* conta = repo.buscarConta(numero);
     if (!conta) return 0;
