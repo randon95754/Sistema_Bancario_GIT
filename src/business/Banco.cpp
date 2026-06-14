@@ -1,4 +1,5 @@
 #include "business/Banco.h"
+#include <sstream>
 #include "model/ContaBonus.h"
 #include "model/ContaPoupanca.h"
 
@@ -77,4 +78,39 @@ double Banco::consultarSaldo(int numero) {
 
 void Banco::criarContaPoupanca(int numero, double saldoInicial) {
     contas[numero] = new ContaPoupanca(numero, saldoInicial);
+}
+
+std::string Banco::consultarConta(int numero) {
+    Conta* conta = buscarConta(numero);
+
+    if (conta == nullptr) {
+        return "Conta nao encontrada";
+    }
+
+    std::stringstream ss;
+
+    if (dynamic_cast<ContaBonus*>(conta)) {
+        ContaBonus* bonus =
+            dynamic_cast<ContaBonus*>(conta);
+
+        ss << "Tipo: Conta Bonus\n";
+        ss << "Numero: " << bonus->getNumero() << "\n";
+        ss << "Saldo: " << bonus->getSaldo() << "\n";
+        ss << "Pontuacao: "
+           << bonus->getPontuacao();
+    }
+    else if (dynamic_cast<ContaPoupanca*>(conta)) {
+
+        ss << "Tipo: Conta Poupanca\n";
+        ss << "Numero: " << conta->getNumero() << "\n";
+        ss << "Saldo: " << conta->getSaldo();
+    }
+    else {
+
+        ss << "Tipo: Conta Simples\n";
+        ss << "Numero: " << conta->getNumero() << "\n";
+        ss << "Saldo: " << conta->getSaldo();
+    }
+
+    return ss.str();
 }

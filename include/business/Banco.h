@@ -2,6 +2,7 @@
 #define BANCO_H
 
 #include <map>
+#include <string>
 #include "model/Conta.h"
 
 class Banco {
@@ -10,6 +11,8 @@ private:
 
 public:
     ~Banco();
+
+    std::string consultarConta(int numero);
     
     void criarConta(int numero);
 
@@ -25,6 +28,8 @@ public:
     double consultarSaldo(int numero);
 
     bool transferir(int origem, int destino, double valor);
+
+    
 };
 
 #endif
