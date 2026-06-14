@@ -1,143 +1,444 @@
+﻿#ifdef _WIN32
+#define _WINSOCK_DEPRECATED_NO_WARNINGS
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#else
+#error REST server currently supported only on Windows.
+#endif
+
+#include <algorithm>
+#include <cctype>
 #include <iostream>
+#include <sstream>
+#include <string>
 #include "business/ServicoBanco.h"
-#include "model/ContaPoupanca.h"
+
+static bool startsWith(const std::string& text, const std::string& prefix) {
+    return text.rfind(prefix, 0) == 0;
+}
+
+static std::string readRequest(SOCKET client) {
+    std::string request;
+    char buffer[4096];
+    size_t totalBytes = 0;
+
+    while (true) {
+        int bytesReceived = recv(client, buffer, static_cast<int>(sizeof(buffer)), 0);
+        if (bytesReceived <= 0) {
+            break;
+        }
+        request.append(buffer, bytesReceived);
+        totalBytes += static_cast<size_t>(bytesReceived);
+
+        size_t headerEnd = request.find("\r\n\r\n");
+        if (headerEnd == std::string::npos) {
+            if (totalBytes >= 65536) {
+                break;
+            }
+            continue;
+        }
+
+        std::string headers = request.substr(0, headerEnd);
+        std::string lowerHeaders = headers;
+        std::transform(lowerHeaders.begin(), lowerHeaders.end(), lowerHeaders.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+
+        size_t contentLength = 0;
+        size_t pos = lowerHeaders.find("content-length:");
+        if (pos != std::string::npos) {
+            pos += strlen("content-length:");
+            while (pos < lowerHeaders.size() && std::isspace(static_cast<unsigned char>(lowerHeaders[pos]))) {
+                pos++;
+            }
+            size_t end = pos;
+            while (end < lowerHeaders.size() && std::isdigit(static_cast<unsigned char>(lowerHeaders[end]))) {
+                end++;
+            }
+            if (end > pos) {
+                try {
+                    contentLength = std::stoul(lowerHeaders.substr(pos, end - pos));
+                } catch (...) {
+                    contentLength = 0;
+                }
+            }
+        }
+
+        size_t bodyStart = headerEnd + 4;
+        if (request.size() >= bodyStart + contentLength) {
+            break;
+        }
+
+        if (totalBytes >= 65536) {
+            break;
+        }
+    }
+
+    return request;
+}
+
+static void sendAll(SOCKET client, const std::string& data) {
+    size_t totalSent = 0;
+    while (totalSent < data.size()) {
+        int sent = send(client, data.c_str() + totalSent, static_cast<int>(data.size() - totalSent), 0);
+        if (sent == SOCKET_ERROR || sent == 0) {
+            break;
+        }
+        totalSent += sent;
+    }
+}
+
+static void sendResponse(SOCKET client, const std::string& status, const std::string& body, const std::string& contentType = "application/json") {
+    std::ostringstream response;
+    response << "HTTP/1.1 " << status << "\r\n";
+    response << "Content-Type: " << contentType << "\r\n";
+    response << "Content-Length: " << body.size() << "\r\n";
+    response << "Connection: close\r\n";
+    response << "\r\n";
+    response << body;
+    sendAll(client, response.str());
+}
+
+static std::string toJson(const ContaInfo& info) {
+    std::ostringstream out;
+    out << "{";
+    out << "\"tipo\":\"" << info.tipo << "\",";
+    out << "\"numero\":" << info.numero << ",";
+    out << "\"saldo\":" << info.saldo << ",";
+    out << "\"pontuacao\":" << info.pontuacao;
+    out << "}";
+    return out.str();
+}
+
+static int extractJsonInt(const std::string& body, const std::string& key, int defaultValue = 0) {
+    std::string marker = "\"" + key + "\"";
+    size_t pos = body.find(marker);
+    if (pos == std::string::npos) {
+        return defaultValue;
+    }
+    size_t colon = body.find(':', pos + marker.size());
+    if (colon == std::string::npos) {
+        return defaultValue;
+    }
+    size_t start = colon + 1;
+    while (start < body.size() && std::isspace(static_cast<unsigned char>(body[start]))) {
+        start++;
+    }
+    size_t end = start;
+    while (end < body.size() && (std::isdigit(static_cast<unsigned char>(body[end])) || body[end] == '-' || body[end] == '.')) {
+        end++;
+    }
+    if (start >= end) {
+        return defaultValue;
+    }
+    try {
+        return std::stoi(body.substr(start, end - start));
+    } catch (...) {
+        return defaultValue;
+    }
+}
+
+static double extractJsonDouble(const std::string& body, const std::string& key, double defaultValue = 0.0) {
+    std::string marker = "\"" + key + "\"";
+    size_t pos = body.find(marker);
+    if (pos == std::string::npos) {
+        return defaultValue;
+    }
+    size_t colon = body.find(':', pos + marker.size());
+    if (colon == std::string::npos) {
+        return defaultValue;
+    }
+    size_t start = colon + 1;
+    while (start < body.size() && std::isspace(static_cast<unsigned char>(body[start]))) {
+        start++;
+    }
+    size_t end = start;
+    while (end < body.size() && (std::isdigit(static_cast<unsigned char>(body[end])) || body[end] == '-' || body[end] == '.')) {
+        end++;
+    }
+    if (start >= end) {
+        return defaultValue;
+    }
+    try {
+        return std::stod(body.substr(start, end - start));
+    } catch (...) {
+        return defaultValue;
+    }
+}
+
+static std::string extractJsonString(const std::string& body, const std::string& key, const std::string& defaultValue = "") {
+    std::string marker = "\"" + key + "\"";
+    size_t pos = body.find(marker);
+    if (pos == std::string::npos) {
+        return defaultValue;
+    }
+    size_t colon = body.find(':', pos + marker.size());
+    if (colon == std::string::npos) {
+        return defaultValue;
+    }
+    size_t start = body.find('"', colon + 1);
+    if (start == std::string::npos) {
+        return defaultValue;
+    }
+    size_t end = body.find('"', start + 1);
+    if (end == std::string::npos) {
+        return defaultValue;
+    }
+    return body.substr(start + 1, end - start - 1);
+}
+
+static bool parseContaPath(const std::string& path, int& numero, std::string& action) {
+    const std::string prefix = "/banco/conta";
+    if (!startsWith(path, prefix)) {
+        return false;
+    }
+
+    std::string tail = path.substr(prefix.size());
+    if (tail.empty()) {
+        return false;
+    }
+
+    if (tail[0] == '/') {
+        tail = tail.substr(1);
+    }
+
+    size_t query = tail.find('?');
+    if (query != std::string::npos) {
+        tail = tail.substr(0, query);
+    }
+
+    if (tail.empty()) {
+        return false;
+    }
+
+    size_t slash = tail.find('/');
+    std::string numeroPart = (slash == std::string::npos) ? tail : tail.substr(0, slash);
+    if (numeroPart.empty()) {
+        return false;
+    }
+
+    try {
+        numero = std::stoi(numeroPart);
+    } catch (...) {
+        return false;
+    }
+
+    if (slash == std::string::npos) {
+        action.clear();
+    } else {
+        action = tail.substr(slash + 1);
+    }
+
+    return true;
+}
 
 int main() {
     ServicoBancoImpl banco;
 
-    // Criar contas
-    banco.criarConta(1);
-    banco.criarConta(2);
-
-    // Movimentações
-    banco.creditar(1, 100);
-    banco.debitar(1, 30);
-
-    // Transferência
-    banco.transferir(1, 2, 40);
-    banco.criarContaPoupanca(10, 500); // Criar conta poupança com saldo inicial de 500
-
-    // Consultar saldo
-    std::cout << "Saldo conta 1: " << banco.consultarSaldo(1) << std::endl;
-    std::cout << "Saldo conta 2: " << banco.consultarSaldo(2) << std::endl;
-
-    // Teste: tentar debitar mais do que o saldo
-    std::cout << "\nTentando debitar 200 da conta 1 (saldo atual: " << banco.consultarSaldo(1) << ")" << std::endl;
-    if (banco.debitar(1, 200)) {
-        std::cout << "Debito realizado com sucesso." << std::endl;
-    } else {
-        std::cout << "Falha: saldo insuficiente para debito." << std::endl;
+    WSADATA wsaData;
+    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
+        std::cerr << "Falha ao inicializar Winsock." << std::endl;
+        return 1;
     }
-    std::cout << "Saldo conta 1 apos tentativa: " << banco.consultarSaldo(1) << std::endl;
 
-    // Teste: tentar transferir mais do que o saldo
-    std::cout << "\nTentando transferir 100 da conta 1 para conta 2 (saldo conta 1: " << banco.consultarSaldo(1) << ")" << std::endl;
-    if (banco.transferir(1, 2, 100)) {
-        std::cout << "Transferencia realizada com sucesso." << std::endl;
-    } else {
-        std::cout << "Falha: saldo insuficiente para transferencia." << std::endl;
+    SOCKET listenSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    if (listenSocket == INVALID_SOCKET) {
+        std::cerr << "Falha ao criar socket." << std::endl;
+        WSACleanup();
+        return 1;
     }
-    std::cout << "Saldo conta 1: " << banco.consultarSaldo(1) << std::endl;
-    std::cout << "Saldo conta 2: " << banco.consultarSaldo(2) << std::endl;
 
-    // ========== TESTE CONTA BONUS ==========
-    std::cout << "\n========== TESTE CONTA BONUS ==========" << std::endl;
-    
-    // Criar contas bonus
-    banco.criarContaBonus(3);
-    banco.criarContaBonus(4);
-    
-    // Verificar pontuacao inicial
-    std::cout << "\nConta 3 (Bonus) criada - Pontuacao inicial: " << banco.obterPontuacao(3) << " pontos" << std::endl;
-    
-    // Teste 1: Deposito de 540 = 5 pontos (1 ponto por 100)
-    std::cout << "\nTeste 1: Deposito de R$ 540,00 na conta 3" << std::endl;
-    banco.creditar(3, 540);
-    std::cout << "Saldo: R$ " << banco.consultarSaldo(3) << std::endl;
-    std::cout << "Pontuacao: " << banco.obterPontuacao(3) << " pontos (esperado: 15)" << std::endl;
-    
-    // Teste 2: Transferencia recebida de 540 = 2 pontos (1 ponto por 200)
-    std::cout << "\nTeste 2: Transferencia de R$ 540,00 da conta 3 para conta 4" << std::endl;
-    banco.transferir(3, 4, 540);
-    
-    std::cout << "Saldo conta 3: R$ " << banco.consultarSaldo(3) << std::endl;
-    std::cout << "Pontuacao conta 3: " << banco.obterPontuacao(3) << " pontos" << std::endl;
-    
-    std::cout << "Saldo conta 4: R$ " << banco.consultarSaldo(4) << std::endl;
-    std::cout << "Pontuacao conta 4: " << banco.obterPontuacao(4) << " pontos (esperado: 12)" << std::endl;
-    
-    // Teste 3: Multiplos depositos
-    std::cout << "\nTeste 3: Deposito de R$ 250,00 na conta 4" << std::endl;
-    banco.creditar(4, 250);
-    std::cout << "Saldo: R$ " << banco.consultarSaldo(4) << std::endl;
-    std::cout << "Pontuacao: " << banco.obterPontuacao(4) << " pontos (esperado: 14)" << std::endl;
+    sockaddr_in service;
+    service.sin_family = AF_INET;
+    service.sin_addr.s_addr = INADDR_ANY;
+    service.sin_port = htons(8080);
 
+    if (bind(listenSocket, reinterpret_cast<sockaddr*>(&service), sizeof(service)) == SOCKET_ERROR) {
+        std::cerr << "Falha ao associar o socket na porta 8080." << std::endl;
+        closesocket(listenSocket);
+        WSACleanup();
+        return 1;
+    }
 
-    std::cout << "\n========== TESTE LIMITE NEGATIVO ==========\n" << std::endl;
+    if (listen(listenSocket, SOMAXCONN) == SOCKET_ERROR) {
+        std::cerr << "Falha ao escutar conexoes." << std::endl;
+        closesocket(listenSocket);
+        WSACleanup();
+        return 1;
+    }
 
-banco.criarConta(50);
+    std::cout << "Servidor REST ativo em http://localhost:8080" << std::endl;
+    std::cout << "POST /banco/conta/                  - cria conta" << std::endl;
+    std::cout << "GET  /banco/conta/{numero}           - consulta conta" << std::endl;
+    std::cout << "GET  /banco/conta/{numero}/saldo      - consulta saldo" << std::endl;
+    std::cout << "PUT  /banco/conta/{numero}/credito   - credita conta" << std::endl;
+    std::cout << "PUT  /banco/conta/{numero}/debito    - debita conta" << std::endl;
+    std::cout << "PUT  /banco/conta/transferencia      - transfere entre contas" << std::endl;
+    std::cout << "PUT  /banco/conta/rendimento         - aplica juros em poupança" << std::endl;
 
-banco.creditar(50, 100);
+    while (true) {
+        SOCKET clientSocket = accept(listenSocket, nullptr, nullptr);
+        if (clientSocket == INVALID_SOCKET) {
+            continue;
+        }
 
-if (banco.debitar(50, 900)) {
-    std::cout << "Debito permitido" << std::endl;
-} else {
-    std::cout << "Debito bloqueado" << std::endl;
-}
+        std::string request = readRequest(clientSocket);
+        if (request.empty()) {
+            closesocket(clientSocket);
+            continue;
+        }
 
-std::cout << "Saldo atual: "
-          << banco.consultarSaldo(50)
-          << std::endl;
+        std::istringstream requestStream(request);
+        std::string requestLine;
+        std::getline(requestStream, requestLine);
+        if (!requestLine.empty() && requestLine.back() == '\r') {
+            requestLine.pop_back();
+        }
 
-if (banco.debitar(50, 500)) {
-    std::cout << "Debito permitido" << std::endl;
-} else {
-    std::cout << "Debito bloqueado corretamente" << std::endl;
-}
+        std::istringstream lineStream(requestLine);
+        std::string method;
+        std::string path;
+        std::string version;
+        lineStream >> method >> path >> version;
 
-std::cout << "Saldo atual: "
-          << banco.consultarSaldo(50)
-          << std::endl;
+        std::string responseBody;
+        std::string status;
 
-    
+        size_t bodyPos = request.find("\r\n\r\n");
+        std::string body;
+        if (bodyPos != std::string::npos) {
+            body = request.substr(bodyPos + 4);
+        }
 
-    std::cout << "\n========== TESTE CONTA POUPANCA ==========\n" 
-          << std::endl;
+        std::cout << "[DEBUG] rawRequest=" << request << std::endl;
+        std::cout << "[DEBUG] requestLine='" << requestLine << "'" << std::endl;
+        std::cout << "[DEBUG] path='" << path << "' method='" << method << "' body='" << body << "'" << std::endl;
 
-    ContaPoupanca poupanca(5, 200);
+        if (method == "GET" && startsWith(path, "/banco/conta")) {
+            int numero;
+            std::string action;
+            if (!parseContaPath(path, numero, action)) {
+                status = "400 Bad Request";
+                responseBody = "{\"error\":\"numero invalido\"}";
+            } else if (action == "saldo") {
+                double saldo = banco.consultarSaldo(numero);
+                status = "200 OK";
+                std::ostringstream out;
+                out << "{\"numero\":" << numero << ",\"saldo\":" << saldo << "}";
+                responseBody = out.str();
+            } else if (action.empty()) {
+                ContaInfo info;
+                if (!banco.consultarDadosConta(numero, info)) {
+                    status = "404 Not Found";
+                    responseBody = "{\"error\":\"Conta nao encontrada\"}";
+                } else {
+                    status = "200 OK";
+                    responseBody = toJson(info);
+                }
+            } else {
+                status = "404 Not Found";
+                responseBody = "{\"error\":\"Endpoint nao encontrado\"}";
+            }
+        } else if (method == "PUT" && path == "/banco/conta/transferencia") {
+            int origem = extractJsonInt(body, "from", -1);
+            int destino = extractJsonInt(body, "to", -1);
+            double amount = extractJsonDouble(body, "amount", 0.0);
+            if (origem <= 0 || destino <= 0 || amount <= 0.0) {
+                status = "400 Bad Request";
+                responseBody = "{\"error\":\"dados invalidos\"}";
+            } else if (!banco.transferir(origem, destino, amount)) {
+                status = "404 Not Found";
+                responseBody = "{\"error\":\"Transferencia falhou. Conta nao encontrada ou saldo insuficiente\"}";
+            } else {
+                status = "200 OK";
+                std::ostringstream out;
+                out << "{\"from\":" << origem << ",\"to\":" << destino << ",\"amount\":" << amount << ",\"status\":\"transferencia realizada\"}";
+                responseBody = out.str();
+            }
+        } else if (method == "PUT" && path == "/banco/conta/rendimento") {
+            int numero = extractJsonInt(body, "numero", -1);
+            double taxa = extractJsonDouble(body, "taxa", 0.0);
+            if (numero <= 0 || taxa <= 0.0) {
+                status = "400 Bad Request";
+                responseBody = "{\"error\":\"dados invalidos\"}";
+            } else if (!banco.renderJuros(numero, taxa)) {
+                status = "404 Not Found";
+                responseBody = "{\"error\":\"Conta nao encontrada ou nao eh poupanca\"}";
+            } else {
+                status = "200 OK";
+                std::ostringstream out;
+                out << "{\"numero\":" << numero << ",\"taxa\":" << taxa << ",\"status\":\"juros aplicados\"}";
+                responseBody = out.str();
+            }
+        } else if (method == "PUT" && startsWith(path, "/banco/conta")) {
+            int numero;
+            std::string action;
+            if (!parseContaPath(path, numero, action)) {
+                status = "400 Bad Request";
+                responseBody = "{\"error\":\"numero invalido\"}";
+            } else if (action == "credito") {
+                double valor = extractJsonDouble(body, "valor", 0.0);
+                if (valor <= 0.0) {
+                    status = "400 Bad Request";
+                    responseBody = "{\"error\":\"valor invalido\"}";
+                } else if (!banco.creditar(numero, valor)) {
+                    status = "404 Not Found";
+                    responseBody = "{\"error\":\"Conta nao encontrada\"}";
+                } else {
+                    status = "200 OK";
+                    std::ostringstream out;
+                    out << "{\"numero\":" << numero << ",\"valor\":" << valor << ",\"status\":\"creditado\"}";
+                    responseBody = out.str();
+                }
+            } else if (action == "debito") {
+                double valor = extractJsonDouble(body, "valor", 0.0);
+                if (valor <= 0.0) {
+                    status = "400 Bad Request";
+                    responseBody = "{\"error\":\"valor invalido\"}";
+                } else if (!banco.debitar(numero, valor)) {
+                    status = "404 Not Found";
+                    responseBody = "{\"error\":\"Conta nao encontrada ou saldo insuficiente\"}";
+                } else {
+                    status = "200 OK";
+                    std::ostringstream out;
+                    out << "{\"numero\":" << numero << ",\"valor\":" << valor << ",\"status\":\"debito realizado\"}";
+                    responseBody = out.str();
+                }
+            } else {
+                status = "404 Not Found";
+                responseBody = "{\"error\":\"Endpoint nao encontrado\"}";
+            }
+        } else if (method == "POST" && (path == "/banco/conta" || path == "/banco/conta/")) {
+            int numero = extractJsonInt(body, "numero", -1);
+            if (numero <= 0) {
+                status = "400 Bad Request";
+                responseBody = "{\"error\":\"numero invalido\"}";
+            } else {
+                std::string tipo = extractJsonString(body, "tipo", "simples");
+                std::transform(tipo.begin(), tipo.end(), tipo.begin(), [](unsigned char c) { return std::tolower(c); });
 
-    poupanca.creditar(200);
+                if (tipo == "poupanca") {
+                    double saldoInicial = extractJsonDouble(body, "saldoInicial", 0.0);
+                    banco.criarContaPoupanca(numero, saldoInicial);
+                } else if (tipo == "bonus") {
+                    banco.criarContaBonus(numero);
+                } else {
+                    banco.criarConta(numero);
+                }
 
-    std::cout << "Saldo inicial: R$ "
-          << poupanca.getSaldo()
-          << std::endl;
+                std::ostringstream out;
+                out << "{\"status\":\"created\",\"numero\":" << numero << "}";
+                status = "201 Created";
+                responseBody = out.str();
+            }
+        } else {
+            status = "404 Not Found";
+            responseBody = "{\"error\":\"Endpoint nao encontrado\"}";
+        }
 
-    std::cout << "Aplicando juros de 10.5%" 
-          << std::endl;
+        sendResponse(clientSocket, status, responseBody);
+        closesocket(clientSocket);
+    }
 
-    poupanca.renderJuros(10.5);
-
-        std::cout << "Saldo final: R$ "
-              << poupanca.getSaldo()
-              << std::endl;
-
-    std::cout << "\n========== TESTE CONSULTA DE CONTA ==========\n"
-              << std::endl;
-
-    std::cout << "\n--- Conta Simples (Conta 1) ---" << std::endl;
-    std::cout << banco.consultarConta(1) << std::endl;
-
-    std::cout << "\n--- Conta Bonus (Conta 3) ---" << std::endl;
-    std::cout << banco.consultarConta(3) << std::endl;
-
-    std::cout << "\n--- Conta Bonus (Conta 4) ---" << std::endl;
-    std::cout << banco.consultarConta(4) << std::endl;
-
-    std::cout << "\n--- Conta Poupanca (Conta 10) ---" << std::endl;
-    std::cout << banco.consultarConta(10) << std::endl;
-
-    std::cout << "\n--- Conta Inexistente (999) ---" << std::endl;
-    std::cout << banco.consultarConta(999) << std::endl;
-
+    closesocket(listenSocket);
+    WSACleanup();
     return 0;
 }

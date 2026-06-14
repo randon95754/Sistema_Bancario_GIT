@@ -15,9 +15,11 @@ public:
     virtual bool creditar(int numero, double valor) = 0;
     virtual bool debitar(int numero, double valor) = 0;
     virtual bool transferir(int origem, int destino, double valor) = 0;
+    virtual bool renderJuros(int numero, double taxa) = 0;
 
     virtual double consultarSaldo(int numero) = 0;
     virtual std::string consultarConta(int numero) = 0;
+    virtual bool consultarDadosConta(int numero, ContaInfo& info) = 0;
 
     // Retorna pontuação para ContaBonus, 0 para outros tipos
     virtual int obterPontuacao(int numero) = 0;
@@ -35,9 +37,11 @@ public:
     bool creditar(int numero, double valor) override;
     bool debitar(int numero, double valor) override;
     bool transferir(int origem, int destino, double valor) override;
+    bool renderJuros(int numero, double taxa) override;
 
     double consultarSaldo(int numero) override;
     std::string consultarConta(int numero) override;
+    bool consultarDadosConta(int numero, ContaInfo& info) override;
 
     int obterPontuacao(int numero) override;
 

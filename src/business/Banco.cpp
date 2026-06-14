@@ -31,10 +31,18 @@ bool Banco::debitar(int numero, double valor) {
 }
 
 void Banco::criarConta(int numero) {
+    auto it = contas.find(numero);
+    if (it != contas.end()) {
+        delete it->second;
+    }
     contas[numero] = new Conta(numero);
 }
 
 void Banco::criarContaBonus(int numero) {
+    auto it = contas.find(numero);
+    if (it != contas.end()) {
+        delete it->second;
+    }
     contas[numero] = new ContaBonus(numero);
 }
 
@@ -66,6 +74,21 @@ bool Banco::transferir(int origem, int destino, double valor) {
     return false;
 }
 
+bool Banco::renderJuros(int numero, double taxa) {
+    Conta* conta = buscarConta(numero);
+    if (conta == nullptr) {
+        return false;
+    }
+
+    ContaPoupanca* poupanca = dynamic_cast<ContaPoupanca*>(conta);
+    if (poupanca == nullptr) {
+        return false;
+    }
+
+    poupanca->renderJuros(taxa);
+    return true;
+}
+
 double Banco::consultarSaldo(int numero) {
     Conta* conta = buscarConta(numero);
 
@@ -76,40 +99,54 @@ double Banco::consultarSaldo(int numero) {
     return 0.0;
 }
 
+ContaInfo Banco::consultarDadosConta(int numero) {
+    ContaInfo info;
+    Conta* conta = buscarConta(numero);
+
+    if (conta == nullptr) {
+        return info;
+    }
+
+    info.existe = true;
+    info.numero = conta->getNumero();
+    info.saldo = conta->getSaldo();
+
+    if (auto bonus = dynamic_cast<ContaBonus*>(conta)) {
+        info.tipo = "Conta Bonus";
+        info.pontuacao = bonus->getPontuacao();
+    }
+    else if (dynamic_cast<ContaPoupanca*>(conta)) {
+        info.tipo = "Conta Poupanca";
+    }
+    else {
+        info.tipo = "Conta Simples";
+    }
+
+    return info;
+}
+
 void Banco::criarContaPoupanca(int numero, double saldoInicial) {
+    auto it = contas.find(numero);
+    if (it != contas.end()) {
+        delete it->second;
+    }
     contas[numero] = new ContaPoupanca(numero, saldoInicial);
 }
 
 std::string Banco::consultarConta(int numero) {
-    Conta* conta = buscarConta(numero);
+    ContaInfo info = consultarDadosConta(numero);
 
-    if (conta == nullptr) {
+    if (!info.existe) {
         return "Conta nao encontrada";
     }
 
     std::stringstream ss;
+    ss << "Tipo: " << info.tipo << "\n";
+    ss << "Numero: " << info.numero << "\n";
+    ss << "Saldo: " << info.saldo;
 
-    if (dynamic_cast<ContaBonus*>(conta)) {
-        ContaBonus* bonus =
-            dynamic_cast<ContaBonus*>(conta);
-
-        ss << "Tipo: Conta Bonus\n";
-        ss << "Numero: " << bonus->getNumero() << "\n";
-        ss << "Saldo: " << bonus->getSaldo() << "\n";
-        ss << "Pontuacao: "
-           << bonus->getPontuacao();
-    }
-    else if (dynamic_cast<ContaPoupanca*>(conta)) {
-
-        ss << "Tipo: Conta Poupanca\n";
-        ss << "Numero: " << conta->getNumero() << "\n";
-        ss << "Saldo: " << conta->getSaldo();
-    }
-    else {
-
-        ss << "Tipo: Conta Simples\n";
-        ss << "Numero: " << conta->getNumero() << "\n";
-        ss << "Saldo: " << conta->getSaldo();
+    if (info.tipo == "Conta Bonus") {
+        ss << "\nPontuacao: " << info.pontuacao;
     }
 
     return ss.str();

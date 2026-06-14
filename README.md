@@ -79,13 +79,26 @@ Link do projeto:
 2. **Compile o projeto (g++)** — compila todos os arquivos fontes e coloca o binário em `bin/app.exe`:
    ```powershell
    mkdir -Force bin
-   g++ -std=c++17 -I include src/main/main.cpp src/business/Banco.cpp src/business/ServicoBanco.cpp src/model/Conta.cpp src/model/ContaBonus.cpp src/model/ContaPoupanca.cpp -o bin/app.exe
-   ```
+   g++ -std=c++17 -I include src/main/main.cpp src/business/Banco.cpp src/business/ServicoBanco.cpp src/model/Conta.cpp src/model/ContaBonus.cpp src/model/ContaPoupanca.cpp -o bin/app.exe -lws2_32
+   ```\
 
 3. **Execute o programa**:
    ```powershell
    .\bin\app.exe
+   ```\
+
+4. **Teste o servidor REST** (em outro terminal):
+   ```powershell
+   curl -s -X POST http://localhost:8080/banco/conta/ -H "Content-Type: application/json" -d "{\"numero\":101,\"tipo\":\"bonus\"}"
+   curl -s http://localhost:8080/banco/conta/101
+   curl -s http://localhost:8080/banco/conta/101/saldo
+   curl -s -X PUT http://localhost:8080/banco/conta/101/credito -H "Content-Type: application/json" -d "{\"valor\":150.0}"
+   curl -s -X PUT http://localhost:8080/banco/conta/101/debito -H "Content-Type: application/json" -d "{\"valor\":50.0}"
+   curl -s -X PUT http://localhost:8080/banco/conta/transferencia -H "Content-Type: application/json" -d "{\"from\":101,\"to\":102,\"amount\":25.0}"
+   curl -s -X PUT http://localhost:8080/banco/conta/rendimento -H "Content-Type: application/json" -d "{\"numero\":102,\"taxa\":1.5}"
    ```
+   O primeiro comando cria uma conta; o segundo consulta essa conta; o terceiro consulta o saldo; o quarto credita a conta; o quinto debita a conta; o sexto transfere entre contas; o sétimo aplica rendimento a uma conta poupança.
+
 
 Alternativa (MSVC/Visual Studio Developer Prompt):
    ```powershell
