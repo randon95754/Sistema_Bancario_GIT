@@ -1,10 +1,9 @@
 #include <iostream>
-#include "business/Banco.h"
-#include "model/ContaBonus.h"
+#include "business/ServicoBanco.h"
 #include "model/ContaPoupanca.h"
 
 int main() {
-    Banco banco;
+    ServicoBancoImpl banco;
 
     // Criar contas
     banco.criarConta(1);
@@ -49,31 +48,29 @@ int main() {
     banco.criarContaBonus(4);
     
     // Verificar pontuacao inicial
-    ContaBonus* contaBonus3 = dynamic_cast<ContaBonus*>(banco.buscarConta(3));
-    std::cout << "\nConta 3 (Bonus) criada - Pontuacao inicial: " << contaBonus3->getPontuacao() << " pontos" << std::endl;
+    std::cout << "\nConta 3 (Bonus) criada - Pontuacao inicial: " << banco.obterPontuacao(3) << " pontos" << std::endl;
     
     // Teste 1: Deposito de 540 = 5 pontos (1 ponto por 100)
     std::cout << "\nTeste 1: Deposito de R$ 540,00 na conta 3" << std::endl;
     banco.creditar(3, 540);
     std::cout << "Saldo: R$ " << banco.consultarSaldo(3) << std::endl;
-    std::cout << "Pontuacao: " << contaBonus3->getPontuacao() << " pontos (esperado: 15)" << std::endl;
+    std::cout << "Pontuacao: " << banco.obterPontuacao(3) << " pontos (esperado: 15)" << std::endl;
     
     // Teste 2: Transferencia recebida de 540 = 2 pontos (1 ponto por 200)
     std::cout << "\nTeste 2: Transferencia de R$ 540,00 da conta 3 para conta 4" << std::endl;
     banco.transferir(3, 4, 540);
-    ContaBonus* contaBonus4 = dynamic_cast<ContaBonus*>(banco.buscarConta(4));
     
     std::cout << "Saldo conta 3: R$ " << banco.consultarSaldo(3) << std::endl;
-    std::cout << "Pontuacao conta 3: " << contaBonus3->getPontuacao() << " pontos" << std::endl;
+    std::cout << "Pontuacao conta 3: " << banco.obterPontuacao(3) << " pontos" << std::endl;
     
     std::cout << "Saldo conta 4: R$ " << banco.consultarSaldo(4) << std::endl;
-    std::cout << "Pontuacao conta 4: " << contaBonus4->getPontuacao() << " pontos (esperado: 12)" << std::endl;
+    std::cout << "Pontuacao conta 4: " << banco.obterPontuacao(4) << " pontos (esperado: 12)" << std::endl;
     
     // Teste 3: Multiplos depositos
     std::cout << "\nTeste 3: Deposito de R$ 250,00 na conta 4" << std::endl;
     banco.creditar(4, 250);
     std::cout << "Saldo: R$ " << banco.consultarSaldo(4) << std::endl;
-    std::cout << "Pontuacao: " << contaBonus4->getPontuacao() << " pontos (esperado: 14)" << std::endl;
+    std::cout << "Pontuacao: " << banco.obterPontuacao(4) << " pontos (esperado: 14)" << std::endl;
 
 
     std::cout << "\n========== TESTE LIMITE NEGATIVO ==========\n" << std::endl;

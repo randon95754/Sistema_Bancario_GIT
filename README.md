@@ -71,27 +71,29 @@ Link do projeto:
 ### Passos para Compilar e Executar
 
 1. **Clone o repositório** (se ainda não clonou):
-   ```
+   ```powershell
    git clone https://github.com/randon95754/Sistema_Bancario_GIT.git
    cd Sistema_Bancario_GIT
    ```
 
-2. **Compile o projeto**:
-   ```
-   g++ -I include src/main/main.cpp src/business/Banco.cpp src/model/Conta.cpp -o banco
+2. **Compile o projeto (g++)** — compila todos os arquivos fontes e coloca o binário em `bin/app.exe`:
+   ```powershell
+   mkdir -Force bin
+   g++ -std=c++17 -I include src/main/main.cpp src/business/Banco.cpp src/business/ServicoBanco.cpp src/model/Conta.cpp src/model/ContaBonus.cpp src/model/ContaPoupanca.cpp -o bin/app.exe
    ```
 
 3. **Execute o programa**:
-   ```
-   ./banco
-   ```
-
-   No Windows, se usar PowerShell ou Command Prompt, execute:
-   ```
-   .\banco.exe
+   ```powershell
+   .\bin\app.exe
    ```
 
-O programa irá executar e exibir saídas no console, como saldos das contas.
+Alternativa (MSVC/Visual Studio Developer Prompt):
+   ```powershell
+   cl /EHsc /I include src\main\main.cpp src\business\Banco.cpp src\business\ServicoBanco.cpp src\model\Conta.cpp src\model\ContaBonus.cpp src\model\ContaPoupanca.cpp /Fe:bin\app.exe
+   .\bin\app.exe
+   ```
+
+O programa exibirá saídas no console com exemplos de operações (criação de contas, depósitos, transferências, testes de ContaBonus e ContaPoupanca).
 
 ---
 
