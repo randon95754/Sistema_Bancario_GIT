@@ -38,7 +38,7 @@ public:
 
     bool transferir(int origem, int destino, double valor);
 
-    
+    bool renderJuros(int numero, double taxa);
 };
 
 #endif

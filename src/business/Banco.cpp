@@ -74,6 +74,21 @@ bool Banco::transferir(int origem, int destino, double valor) {
     return false;
 }
 
+bool Banco::renderJuros(int numero, double taxa) {
+    Conta* conta = buscarConta(numero);
+    if (conta == nullptr) {
+        return false;
+    }
+
+    ContaPoupanca* poupanca = dynamic_cast<ContaPoupanca*>(conta);
+    if (poupanca == nullptr) {
+        return false;
+    }
+
+    poupanca->renderJuros(taxa);
+    return true;
+}
+
 double Banco::consultarSaldo(int numero) {
     Conta* conta = buscarConta(numero);
 

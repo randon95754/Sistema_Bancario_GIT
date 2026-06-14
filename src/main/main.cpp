@@ -266,11 +266,13 @@ int main() {
     }
 
     std::cout << "Servidor REST ativo em http://localhost:8080" << std::endl;
-    std::cout << "POST /banco/conta/           - cria conta" << std::endl;
-    std::cout << "GET  /banco/conta/{numero}      - consulta conta" << std::endl;
-    std::cout << "GET  /banco/conta/{numero}/saldo - consulta saldo" << std::endl;
-    std::cout << "PUT  /banco/conta/{numero}/credito - credita conta" << std::endl;
-    std::cout << "PUT  /banco/conta/{numero}/debito  - debita conta" << std::endl;
+    std::cout << "POST /banco/conta/                  - cria conta" << std::endl;
+    std::cout << "GET  /banco/conta/{numero}           - consulta conta" << std::endl;
+    std::cout << "GET  /banco/conta/{numero}/saldo      - consulta saldo" << std::endl;
+    std::cout << "PUT  /banco/conta/{numero}/credito   - credita conta" << std::endl;
+    std::cout << "PUT  /banco/conta/{numero}/debito    - debita conta" << std::endl;
+    std::cout << "PUT  /banco/conta/transferencia      - transfere entre contas" << std::endl;
+    std::cout << "PUT  /banco/conta/rendimento         - aplica juros em poupança" << std::endl;
 
     while (true) {
         SOCKET clientSocket = accept(listenSocket, nullptr, nullptr);
@@ -334,6 +336,37 @@ int main() {
             } else {
                 status = "404 Not Found";
                 responseBody = "{\"error\":\"Endpoint nao encontrado\"}";
+            }
+        } else if (method == "PUT" && path == "/banco/conta/transferencia") {
+            int origem = extractJsonInt(body, "from", -1);
+            int destino = extractJsonInt(body, "to", -1);
+            double amount = extractJsonDouble(body, "amount", 0.0);
+            if (origem <= 0 || destino <= 0 || amount <= 0.0) {
+                status = "400 Bad Request";
+                responseBody = "{\"error\":\"dados invalidos\"}";
+            } else if (!banco.transferir(origem, destino, amount)) {
+                status = "404 Not Found";
+                responseBody = "{\"error\":\"Transferencia falhou. Conta nao encontrada ou saldo insuficiente\"}";
+            } else {
+                status = "200 OK";
+                std::ostringstream out;
+                out << "{\"from\":" << origem << ",\"to\":" << destino << ",\"amount\":" << amount << ",\"status\":\"transferencia realizada\"}";
+                responseBody = out.str();
+            }
+        } else if (method == "PUT" && path == "/banco/conta/rendimento") {
+            int numero = extractJsonInt(body, "numero", -1);
+            double taxa = extractJsonDouble(body, "taxa", 0.0);
+            if (numero <= 0 || taxa <= 0.0) {
+                status = "400 Bad Request";
+                responseBody = "{\"error\":\"dados invalidos\"}";
+            } else if (!banco.renderJuros(numero, taxa)) {
+                status = "404 Not Found";
+                responseBody = "{\"error\":\"Conta nao encontrada ou nao eh poupanca\"}";
+            } else {
+                status = "200 OK";
+                std::ostringstream out;
+                out << "{\"numero\":" << numero << ",\"taxa\":" << taxa << ",\"status\":\"juros aplicados\"}";
+                responseBody = out.str();
             }
         } else if (method == "PUT" && startsWith(path, "/banco/conta")) {
             int numero;

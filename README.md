@@ -94,8 +94,10 @@ Link do projeto:
    curl -s http://localhost:8080/banco/conta/101/saldo
    curl -s -X PUT http://localhost:8080/banco/conta/101/credito -H "Content-Type: application/json" -d "{\"valor\":150.0}"
    curl -s -X PUT http://localhost:8080/banco/conta/101/debito -H "Content-Type: application/json" -d "{\"valor\":50.0}"
+   curl -s -X PUT http://localhost:8080/banco/conta/transferencia -H "Content-Type: application/json" -d "{\"from\":101,\"to\":102,\"amount\":25.0}"
+   curl -s -X PUT http://localhost:8080/banco/conta/rendimento -H "Content-Type: application/json" -d "{\"numero\":102,\"taxa\":1.5}"
    ```
-   O primeiro comando cria uma conta; o segundo consulta essa conta; o terceiro consulta o saldo; o quarto credita a conta; o quinto debita a conta.
+   O primeiro comando cria uma conta; o segundo consulta essa conta; o terceiro consulta o saldo; o quarto credita a conta; o quinto debita a conta; o sexto transfere entre contas; o sétimo aplica rendimento a uma conta poupança.
 
 
 Alternativa (MSVC/Visual Studio Developer Prompt):

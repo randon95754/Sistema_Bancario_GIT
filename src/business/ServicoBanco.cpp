@@ -29,6 +29,10 @@ bool ServicoBancoImpl::transferir(int origem, int destino, double valor) {
     return repo.transferir(origem, destino, valor);
 }
 
+bool ServicoBancoImpl::renderJuros(int numero, double taxa) {
+    return repo.renderJuros(numero, taxa);
+}
+
 double ServicoBancoImpl::consultarSaldo(int numero) {
     return repo.consultarSaldo(numero);
 }
