@@ -1,4 +1,4 @@
-name: CI Pipeline
+name: Pipeline
 
 on:
   push:
@@ -15,10 +15,15 @@ jobs:
 
     runs-on: ubuntu-latest
 
+    permissions:
+      contents: write
+
     steps:
 
     - name: Checkout
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
 
     - name: Verificar compilador
       run: g++ --version
@@ -36,3 +41,14 @@ jobs:
 
     - name: Executar testes
       run: ./testes
+
+    - name: Criar tag build
+      if: github.event_name == 'push'
+      run: |
+        TAG="build-${{ github.run_number }}"
+
+        git config user.name "github-actions"
+        git config user.email "github-actions@github.com"
+
+        git tag $TAG
+        git push origin $TAG
