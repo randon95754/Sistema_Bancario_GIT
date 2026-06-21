@@ -38,7 +38,7 @@ O sistema irá contemplar operações básicas de contas bancárias, com foco na
 O projeto segue o padrão **GitLab Flow**, com as seguintes branches:
 
 * `main` → versão estável
-* `develop` → integração das funcionalidades
+* `staging` → homologação e estabilização
 * `feature/*` → desenvolvimento de novas funcionalidades
 * `bugfix/*` → correção de erros
 
