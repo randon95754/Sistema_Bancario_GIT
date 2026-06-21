@@ -25,6 +25,7 @@ public:
     
     void criarConta(int numero);
     void criarConta(int numero, double saldoInicial);
+    void criarContaPoupanca(int numero, double saldoInicial);
     void criarContaBonus(int numero);
     Conta* buscarConta(int numero);
 
