@@ -7,7 +7,7 @@ class ContaPoupanca : public Conta {
 
 public:
 
-    ContaPoupanca(int numero);
+    ContaPoupanca(int numero, double saldoInicial);
 
     void renderJuros(double taxa);
 };

@@ -1,7 +1,8 @@
 #include "model/ContaPoupanca.h"
 
-ContaPoupanca::ContaPoupanca(int numero)
+ContaPoupanca::ContaPoupanca(int numero, double saldoInicial)
     : Conta(numero) {
+        saldo = saldoInicial;
 }
 
 void ContaPoupanca::renderJuros(double taxa) {

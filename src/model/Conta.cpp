@@ -33,7 +33,7 @@ bool Conta::creditar(double valor) {
 }
 
 bool Conta::debitar(double valor) {
-    if (valor > 0 && saldo >= valor) {
+    if (valor > 0 && (saldo - valor) >= -1000) { // Permitir saldo negativo até -1000
         saldo -= valor;
         return true;
     }

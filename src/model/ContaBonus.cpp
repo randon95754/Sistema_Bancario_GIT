@@ -23,7 +23,7 @@ bool ContaBonus::creditar(double valor) {
     return sucesso;
 }
 
-// Receber transferência e ganhar pontos
+//Receber Transferencia e ganhar pontos
 void ContaBonus::receberTransferencia(double valor) {
     Conta::creditar(valor);
     // 1 ponto para cada R$ 150,00 recebidos em transferência

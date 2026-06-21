@@ -2,7 +2,16 @@
 #define BANCO_H
 
 #include <map>
+#include <string>
 #include "model/Conta.h"
+
+struct ContaInfo {
+    std::string tipo;
+    int numero = 0;
+    double saldo = 0.0;
+    int pontuacao = 0;
+    bool existe = false;
+};
 
 class Banco {
 private:
@@ -10,6 +19,9 @@ private:
 
 public:
     ~Banco();
+
+    std::string consultarConta(int numero);
+    ContaInfo consultarDadosConta(int numero);
     
     void criarConta(int numero);
     void criarConta(int numero, double saldoInicial);
@@ -23,6 +35,8 @@ public:
     double consultarSaldo(int numero);
 
     bool transferir(int origem, int destino, double valor);
+
+    bool renderJuros(int numero, double taxa);
 };
 
 #endif
