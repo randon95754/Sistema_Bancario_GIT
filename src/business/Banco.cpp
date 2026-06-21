@@ -30,6 +30,10 @@ bool Banco::debitar(int numero, double valor) {
     return false;
 }
 
+void Banco::criarConta(int numero, double saldoInicial) {
+    contas[numero] = new Conta(numero, saldoInicial);
+}
+
 void Banco::criarConta(int numero) {
     auto it = contas.find(numero);
     if (it != contas.end()) {
@@ -58,9 +62,8 @@ bool Banco::transferir(int origem, int destino, double valor) {
     Conta* contaOrigem = buscarConta(origem);
     Conta* contaDestino = buscarConta(destino);
 
-    if (contaOrigem != nullptr && contaDestino != nullptr) {
+    if (contaOrigem != nullptr && contaDestino != nullptr && valor > 0) {
         if (contaOrigem->debitar(valor)) {
-            // Verifica se a conta destino é uma ContaBonus
             ContaBonus* contaBonusDestino = dynamic_cast<ContaBonus*>(contaDestino);
             if (contaBonusDestino != nullptr) {
                 contaBonusDestino->receberTransferencia(valor);

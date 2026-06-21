@@ -10,6 +10,11 @@ Conta::Conta(int numero) {
     this->saldo = 0.0;
 }
 
+Conta::Conta(int numero, double saldoInicial) {
+    this->numero = numero;
+    this->saldo = saldoInicial;
+}
+
 int Conta::getNumero() {
     return numero;
 }

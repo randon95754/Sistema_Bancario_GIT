@@ -9,14 +9,14 @@ protected:
 public:
     Conta();
     Conta(int numero);
+    Conta(int numero, double saldoInicial);
     virtual ~Conta() = default;
 
     int getNumero();
     double getSaldo();
 
-    virtual bool creditar(double valor); 
-    virtual bool debitar(double valor);  
-    void transferir(int origem, int destino, double valor);
+    virtual bool creditar(double valor);
+    virtual bool debitar(double valor);
 };
 
 #endif

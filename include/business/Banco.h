@@ -24,9 +24,7 @@ public:
     ContaInfo consultarDadosConta(int numero);
     
     void criarConta(int numero);
-
-    void criarContaPoupanca(int numero, double saldoInicial);
-
+    void criarConta(int numero, double saldoInicial);
     void criarContaBonus(int numero);
     Conta* buscarConta(int numero);
 
