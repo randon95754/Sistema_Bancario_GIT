@@ -1,14 +1,14 @@
-name: Estabilizacao Pipeline
+name: Release Pipeline
 
 on:
   pull_request:
     branches:
-      - staging
+      - production
     types:
       - closed
 
 jobs:
-  stabilization:
+  release:
     if: github.event.pull_request.merged == true
 
     runs-on: ubuntu-latest
@@ -52,8 +52,8 @@ jobs:
       - name: Executar testes
         run: ./testes
 
-      - name: Criar RC
-        id: rc
+      - name: Gerar Release
+        id: release
         run: |
 
           git fetch --all --tags
@@ -62,15 +62,15 @@ jobs:
 
           echo "Branch origem: $SOURCE_BRANCH"
 
-          LAST_TAG=$(git tag | grep "^rc-" | sort -V | tail -n 1)
+          LAST_TAG=$(git tag | grep "^rel-" | sort -V | tail -n 1)
 
           if [ -z "$LAST_TAG" ]; then
 
-            NEW_TAG="rc-1.0"
+            NEW_TAG="rel-1.0"
 
           else
 
-            VERSION=${LAST_TAG#rc-}
+            VERSION=${LAST_TAG#rel-}
 
             IFS='.' read -r -a VERSION_PARTS <<< "$VERSION"
 
@@ -82,31 +82,31 @@ jobs:
             [ -z "$Y" ] && Y=0
             [ -z "$Z" ] && Z=0
 
-            if [[ "$SOURCE_BRANCH" == "main" ]]; then
+            if [[ "$SOURCE_BRANCH" == "staging" ]]; then
 
               Y=$((Y + 1))
-              NEW_TAG="rc-$X.$Y"
+              NEW_TAG="rel-$X.$Y"
 
-            elif [[ "$SOURCE_BRANCH" == bugfix/* ]]; then
+            elif [[ "$SOURCE_BRANCH" == hotfix/* ]]; then
 
-              if [[ "$LAST_TAG" =~ ^rc-[0-9]+\.[0-9]+$ ]]; then
+              if [[ "$LAST_TAG" =~ ^rel-[0-9]+\.[0-9]+$ ]]; then
                 Z=1
               else
                 Z=$((Z + 1))
               fi
 
-              NEW_TAG="rc-$X.$Y.$Z"
+              NEW_TAG="rel-$X.$Y.$Z"
 
             else
 
-              echo "Branch inválida."
+              echo "Release só pode ser criada a partir de staging ou hotfix/*."
               exit 1
 
             fi
 
           fi
 
-          echo "Nova RC: $NEW_TAG"
+          echo "Nova Release: $NEW_TAG"
 
           echo "tag=$NEW_TAG" >> "$GITHUB_OUTPUT"
 
@@ -121,11 +121,11 @@ jobs:
           git tag "$NEW_TAG"
           git push origin "$NEW_TAG"
 
-          echo "RC criada com sucesso."
+          echo "Release criada com sucesso."
 
       - name: Gerar pacote ZIP
         run: |
-          zip -r "${{ steps.rc.outputs.tag }}.zip" \
+          zip -r "${{ steps.release.outputs.tag }}.zip" \
             src \
             include \
             tests \
@@ -134,5 +134,5 @@ jobs:
       - name: Publicar Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ steps.rc.outputs.tag }}
-          path: ${{ steps.rc.outputs.tag }}.zip
+          name: ${{ steps.release.outputs.tag }}
+          path: ${{ steps.release.outputs.tag }}.zip

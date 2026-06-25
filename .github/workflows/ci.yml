@@ -3,11 +3,11 @@ name: Pipeline
 on:
   push:
     branches:
-      - develop
+      - main
 
   pull_request:
     branches:
-      - develop
+      - main
 
 jobs:
 
@@ -25,8 +25,10 @@ jobs:
       with:
         fetch-depth: 0
 
-    - name: Verificar compilador
-      run: g++ --version
+    - name: Instalar dependências
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y g++
 
     - name: Compilar testes
       run: |
