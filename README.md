@@ -110,6 +110,59 @@ O programa exibirá saídas no console com exemplos de operações (criação de
 
 ---
 
+## 🐳 Como Executar com Docker
+
+Uma alternativa moderna e portável é executar a API REST através de um container Docker.
+
+### Pré-requisitos
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) instalado e em execução.
+
+### Passos para Construir e Executar
+
+1. **Construa a imagem Docker**:
+   ```powershell
+   docker build -t flowbank-api .
+   ```
+
+2. **Execute o container mapeando as portas**:
+   Se a porta `8080` do seu computador estiver livre, execute:
+   ```powershell
+   docker run -d -p 8080:8080 --name flowbank-app flowbank-api
+   ```
+   Caso a porta `8080` já esteja em uso por algum outro processo local do sistema ou do próprio Docker/WSL, execute mapeando para a porta `8081` do host:
+   ```powershell
+   docker run -d -p 8081:8080 --name flowbank-app flowbank-api
+   ```
+
+3. **Teste os endpoints (usando a porta correspondente, ex: 8080 ou 8081)**:
+   ```powershell
+   # Exemplo testando na porta 8081:
+   curl -s -X POST http://localhost:8081/banco/conta/ -H "Content-Type: application/json" -d "{\"numero\":101,\"tipo\":\"bonus\"}"
+   curl -s http://localhost:8081/banco/conta/101
+   curl -s http://localhost:8081/banco/conta/101/saldo
+   ```
+
+
+### ☁️ Executar a Imagem Oficial do Docker Hub
+
+Se você quiser apenas rodar a API diretamente sem precisar clonar o repositório ou fazer o build manual, pode baixar e executar a imagem publicada no Docker Hub:
+
+```powershell
+# Se a porta 8080 estiver livre no seu host:
+docker run -d -p 8080:8080 --name flowbank-app ivisonfilho/flowbank-api:latest
+
+# Se a porta 8080 estiver ocupada, mapeie para a porta 8081:
+docker run -d -p 8081:8080 --name flowbank-app ivisonfilho/flowbank-api:latest
+```
+
+4. **Gerenciamento do Container**:
+   - Parar execução: `docker stop flowbank-app`
+   - Iniciar execução parada: `docker start flowbank-app`
+   - Remover container: `docker rm flowbank-app`
+   - Visualizar logs: `docker logs -f flowbank-app`
+
+---
+
 ## �📌 Observações
 
 * Todas as alterações são vinculadas a *issues* (tarefas)

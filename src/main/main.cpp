@@ -1,13 +1,21 @@
-﻿#ifdef _WIN32
+#ifdef _WIN32
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #else
-#error REST server currently supported only on Windows.
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <unistd.h>
+#include <arpa/inet.h>
+typedef int SOCKET;
+#define INVALID_SOCKET -1
+#define SOCKET_ERROR -1
+#define closesocket close
 #endif
 
 #include <algorithm>
 #include <cctype>
+#include <cstring>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -231,96 +239,224 @@ static bool parseContaPath(const std::string& path, int& numero, std::string& ac
 }
 
 int main() {
-    Banco banco;
+    ServicoBancoImpl banco;
 
-    // Criar contas com saldo inicial
-    banco.criarConta(1, 100.0);
-    banco.criarConta(2, 50.0);
-
-    // Movimentações
-    banco.creditar(1, 100);
-    banco.debitar(1, 30);
-
-    // Transferência
-    banco.transferir(1, 2, 40);
-
-    // Consultar saldo
-    std::cout << "Saldo conta 1: " << banco.consultarSaldo(1) << std::endl;
-    std::cout << "Saldo conta 2: " << banco.consultarSaldo(2) << std::endl;
-
-    // Teste: tentar debitar mais do que o saldo
-    std::cout << "\nTentando debitar 200 da conta 1 (saldo atual: " << banco.consultarSaldo(1) << ")" << std::endl;
-    if (banco.debitar(1, 200)) {
-        std::cout << "Debito realizado com sucesso." << std::endl;
-    } else {
-        std::cout << "Falha: saldo insuficiente para debito." << std::endl;
+#ifdef _WIN32
+    WSADATA wsaData;
+    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
+        std::cerr << "Falha ao inicializar Winsock." << std::endl;
+        return 1;
     }
-    std::cout << "Saldo conta 1 apos tentativa: " << banco.consultarSaldo(1) << std::endl;
+#endif
 
-    // Teste: tentar transferir mais do que o saldo
-    std::cout << "\nTentando transferir 100 da conta 1 para conta 2 (saldo conta 1: " << banco.consultarSaldo(1) << ")" << std::endl;
-    if (banco.transferir(1, 2, 100)) {
-        std::cout << "Transferencia realizada com sucesso." << std::endl;
-    } else {
-        std::cout << "Falha: saldo insuficiente para transferencia." << std::endl;
+    SOCKET listenSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    if (listenSocket == INVALID_SOCKET) {
+        std::cerr << "Falha ao criar socket." << std::endl;
+#ifdef _WIN32
+        WSACleanup();
+#endif
+        return 1;
     }
-    std::cout << "Saldo conta 1: " << banco.consultarSaldo(1) << std::endl;
-    std::cout << "Saldo conta 2: " << banco.consultarSaldo(2) << std::endl;
 
-    // ========== TESTE CONTA BONUS ==========
-    std::cout << "\n========== TESTE CONTA BONUS ==========" << std::endl;
-    
-    // Criar contas bonus
-    banco.criarContaBonus(3);
-    banco.criarContaBonus(4);
-    
-    // Verificar pontuacao inicial
-    ContaBonus* contaBonus3 = dynamic_cast<ContaBonus*>(banco.buscarConta(3));
-    std::cout << "\nConta 3 (Bonus) criada - Pontuacao inicial: " << contaBonus3->getPontuacao() << " pontos" << std::endl;
-    
-    // Teste 1: Deposito de 540 = 5 pontos (1 ponto por 100)
-    std::cout << "\nTeste 1: Deposito de R$ 540,00 na conta 3" << std::endl;
-    banco.creditar(3, 540);
-    std::cout << "Saldo: R$ " << banco.consultarSaldo(3) << std::endl;
-    std::cout << "Pontuacao: " << contaBonus3->getPontuacao() << " pontos (esperado: 15)" << std::endl;
-    
-    // Teste 2: Transferencia recebida de 540 = 2 pontos (1 ponto por 200)
-    std::cout << "\nTeste 2: Transferencia de R$ 540,00 da conta 3 para conta 4" << std::endl;
-    banco.transferir(3, 4, 540);
-    ContaBonus* contaBonus4 = dynamic_cast<ContaBonus*>(banco.buscarConta(4));
-    
-    std::cout << "Saldo conta 3: R$ " << banco.consultarSaldo(3) << std::endl;
-    std::cout << "Pontuacao conta 3: " << contaBonus3->getPontuacao() << " pontos" << std::endl;
-    
-    std::cout << "Saldo conta 4: R$ " << banco.consultarSaldo(4) << std::endl;
-    std::cout << "Pontuacao conta 4: " << contaBonus4->getPontuacao() << " pontos (esperado: 12)" << std::endl;
-    
-    // Teste 3: Multiplos depositos
-    std::cout << "\nTeste 3: Deposito de R$ 250,00 na conta 4" << std::endl;
-    banco.creditar(4, 250);
-    std::cout << "Saldo: R$ " << banco.consultarSaldo(4) << std::endl;
-    std::cout << "Pontuacao: " << contaBonus4->getPontuacao() << " pontos (esperado: 14)" << std::endl;
+    sockaddr_in service;
+    service.sin_family = AF_INET;
+    service.sin_addr.s_addr = INADDR_ANY;
+    service.sin_port = htons(8080);
 
+    if (bind(listenSocket, reinterpret_cast<sockaddr*>(&service), sizeof(service)) == SOCKET_ERROR) {
+        std::cerr << "Falha ao associar o socket na porta 8080." << std::endl;
+        closesocket(listenSocket);
+#ifdef _WIN32
+        WSACleanup();
+#endif
+        return 1;
+    }
 
+    if (listen(listenSocket, SOMAXCONN) == SOCKET_ERROR) {
+        std::cerr << "Falha ao escutar conexoes." << std::endl;
+        closesocket(listenSocket);
+#ifdef _WIN32
+        WSACleanup();
+#endif
+        return 1;
+    }
 
-    std::cout << "\n========== TESTE CONTA POUPANCA ==========\n" 
-          << std::endl;
+    std::cout << "Servidor REST ativo em http://localhost:8080" << std::endl;
+    std::cout << "POST /banco/conta/                  - cria conta" << std::endl;
+    std::cout << "GET  /banco/conta/{numero}           - consulta conta" << std::endl;
+    std::cout << "GET  /banco/conta/{numero}/saldo      - consulta saldo" << std::endl;
+    std::cout << "PUT  /banco/conta/{numero}/credito   - credita conta" << std::endl;
+    std::cout << "PUT  /banco/conta/{numero}/debito    - debita conta" << std::endl;
+    std::cout << "PUT  /banco/conta/transferencia      - transfere entre contas" << std::endl;
+    std::cout << "PUT  /banco/conta/rendimento         - aplica juros em poupança" << std::endl;
 
-    ContaPoupanca poupanca(5);
+    while (true) {
+        SOCKET clientSocket = accept(listenSocket, nullptr, nullptr);
+        if (clientSocket == INVALID_SOCKET) {
+            continue;
+        }
 
-    poupanca.creditar(200);
+        std::string request = readRequest(clientSocket);
+        if (request.empty()) {
+            closesocket(clientSocket);
+            continue;
+        }
 
-    std::cout << "Saldo inicial: R$ "
-          << poupanca.getSaldo()
-          << std::endl;
+        std::istringstream requestStream(request);
+        std::string requestLine;
+        std::getline(requestStream, requestLine);
+        if (!requestLine.empty() && requestLine.back() == '\r') {
+            requestLine.pop_back();
+        }
 
-    std::cout << "Aplicando juros de 10.5%" 
-          << std::endl;
+        std::istringstream lineStream(requestLine);
+        std::string method;
+        std::string path;
+        std::string version;
+        lineStream >> method >> path >> version;
 
-    poupanca.renderJuros(10.5);
+        std::string responseBody;
+        std::string status;
 
-    std::cout << "Saldo final: R$ "
-          << poupanca.getSaldo()
-          << std::endl;
+        size_t bodyPos = request.find("\r\n\r\n");
+        std::string body;
+        if (bodyPos != std::string::npos) {
+            body = request.substr(bodyPos + 4);
+        }
+
+        std::cout << "[DEBUG] rawRequest=" << request << std::endl;
+        std::cout << "[DEBUG] requestLine='" << requestLine << "'" << std::endl;
+        std::cout << "[DEBUG] path='" << path << "' method='" << method << "' body='" << body << "'" << std::endl;
+
+        if (method == "GET" && startsWith(path, "/banco/conta")) {
+            int numero;
+            std::string action;
+            if (!parseContaPath(path, numero, action)) {
+                status = "400 Bad Request";
+                responseBody = "{\"error\":\"numero invalido\"}";
+            } else if (action == "saldo") {
+                double saldo = banco.consultarSaldo(numero);
+                status = "200 OK";
+                std::ostringstream out;
+                out << "{\"numero\":" << numero << ",\"saldo\":" << saldo << "}";
+                responseBody = out.str();
+            } else if (action.empty()) {
+                ContaInfo info;
+                if (!banco.consultarDadosConta(numero, info)) {
+                    status = "404 Not Found";
+                    responseBody = "{\"error\":\"Conta nao encontrada\"}";
+                } else {
+                    status = "200 OK";
+                    responseBody = toJson(info);
+                }
+            } else {
+                status = "404 Not Found";
+                responseBody = "{\"error\":\"Endpoint nao encontrado\"}";
+            }
+        } else if (method == "PUT" && path == "/banco/conta/transferencia") {
+            int origem = extractJsonInt(body, "from", -1);
+            int destino = extractJsonInt(body, "to", -1);
+            double amount = extractJsonDouble(body, "amount", 0.0);
+            if (origem <= 0 || destino <= 0 || amount <= 0.0) {
+                status = "400 Bad Request";
+                responseBody = "{\"error\":\"dados invalidos\"}";
+            } else if (!banco.transferir(origem, destino, amount)) {
+                status = "404 Not Found";
+                responseBody = "{\"error\":\"Transferencia falhou. Conta nao encontrada ou saldo insuficiente\"}";
+            } else {
+                status = "200 OK";
+                std::ostringstream out;
+                out << "{\"from\":" << origem << ",\"to\":" << destino << ",\"amount\":" << amount << ",\"status\":\"transferencia realizada\"}";
+                responseBody = out.str();
+            }
+        } else if (method == "PUT" && path == "/banco/conta/rendimento") {
+            int numero = extractJsonInt(body, "numero", -1);
+            double taxa = extractJsonDouble(body, "taxa", 0.0);
+            if (numero <= 0 || taxa <= 0.0) {
+                status = "400 Bad Request";
+                responseBody = "{\"error\":\"dados invalidos\"}";
+            } else if (!banco.renderJuros(numero, taxa)) {
+                status = "404 Not Found";
+                responseBody = "{\"error\":\"Conta nao encontrada ou nao eh poupanca\"}";
+            } else {
+                status = "200 OK";
+                std::ostringstream out;
+                out << "{\"numero\":" << numero << ",\"taxa\":" << taxa << ",\"status\":\"juros aplicados\"}";
+                responseBody = out.str();
+            }
+        } else if (method == "PUT" && startsWith(path, "/banco/conta")) {
+            int numero;
+            std::string action;
+            if (!parseContaPath(path, numero, action)) {
+                status = "400 Bad Request";
+                responseBody = "{\"error\":\"numero invalido\"}";
+            } else if (action == "credito") {
+                double valor = extractJsonDouble(body, "valor", 0.0);
+                if (valor <= 0.0) {
+                    status = "400 Bad Request";
+                    responseBody = "{\"error\":\"valor invalido\"}";
+                } else if (!banco.creditar(numero, valor)) {
+                    status = "404 Not Found";
+                    responseBody = "{\"error\":\"Conta nao encontrada\"}";
+                } else {
+                    status = "200 OK";
+                    std::ostringstream out;
+                    out << "{\"numero\":" << numero << ",\"valor\":" << valor << ",\"status\":\"creditado\"}";
+                    responseBody = out.str();
+                }
+            } else if (action == "debito") {
+                double valor = extractJsonDouble(body, "valor", 0.0);
+                if (valor <= 0.0) {
+                    status = "400 Bad Request";
+                    responseBody = "{\"error\":\"valor invalido\"}";
+                } else if (!banco.debitar(numero, valor)) {
+                    status = "404 Not Found";
+                    responseBody = "{\"error\":\"Conta nao encontrada ou saldo insuficiente\"}";
+                } else {
+                    status = "200 OK";
+                    std::ostringstream out;
+                    out << "{\"numero\":" << numero << ",\"valor\":" << valor << ",\"status\":\"debito realizado\"}";
+                    responseBody = out.str();
+                }
+            } else {
+                status = "404 Not Found";
+                responseBody = "{\"error\":\"Endpoint nao encontrado\"}";
+            }
+        } else if (method == "POST" && (path == "/banco/conta" || path == "/banco/conta/")) {
+            int numero = extractJsonInt(body, "numero", -1);
+            if (numero <= 0) {
+                status = "400 Bad Request";
+                responseBody = "{\"error\":\"numero invalido\"}";
+            } else {
+                std::string tipo = extractJsonString(body, "tipo", "simples");
+                std::transform(tipo.begin(), tipo.end(), tipo.begin(), [](unsigned char c) { return std::tolower(c); });
+
+                if (tipo == "poupanca") {
+                    double saldoInicial = extractJsonDouble(body, "saldoInicial", 0.0);
+                    banco.criarContaPoupanca(numero, saldoInicial);
+                } else if (tipo == "bonus") {
+                    banco.criarContaBonus(numero);
+                } else {
+                    banco.criarConta(numero);
+                }
+
+                std::ostringstream out;
+                out << "{\"status\":\"created\",\"numero\":" << numero << "}";
+                status = "201 Created";
+                responseBody = out.str();
+            }
+        } else {
+            status = "404 Not Found";
+            responseBody = "{\"error\":\"Endpoint nao encontrado\"}";
+        }
+
+        sendResponse(clientSocket, status, responseBody);
+        closesocket(clientSocket);
+    }
+
+    closesocket(listenSocket);
+#ifdef _WIN32
+    WSACleanup();
+#endif
     return 0;
 }
