@@ -145,7 +145,10 @@ Uma alternativa moderna e portável é executar a API REST através de um contai
 
 ### ☁️ Executar a Imagem Oficial do Docker Hub
 
-Se você quiser apenas rodar a API diretamente sem precisar clonar o repositório ou fazer o build manual, pode baixar e executar a imagem publicada no Docker Hub:
+A imagem oficial do container deste projeto está publicada e disponível no link direto do Docker Hub: 
+👉 **[ivisonfilho/flowbank-api no Docker Hub](https://hub.docker.com/r/ivisonfilho/flowbank-api)**
+
+Se você quiser apenas rodar a API diretamente sem precisar clonar o repositório ou fazer o build manual, pode baixar e executar a imagem:
 
 ```powershell
 # Se a porta 8080 estiver livre no seu host:
