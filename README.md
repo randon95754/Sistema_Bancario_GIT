@@ -115,3 +115,51 @@ O programa exibirá saídas no console com exemplos de operações (criação de
 * Todas as alterações são vinculadas a *issues* (tarefas)
 * O projeto prioriza boas práticas de versionamento, não a complexidade da aplicação
 * Não há uso de banco de dados nesta fase
+
+---
+
+## ⚓ Git Hooks (Validação de Commits)
+
+Este repositório possui uma política de validação de mensagens de commit integrada localmente via Git Hooks. 
+
+### Regras de Validação (commit-msg):
+1. **Formato**: A primeira linha da mensagem do commit deve iniciar com o número de uma issue correspondente no formato `#NUM_ISSUE – MENSAGEM` (ex: `#33 – Correção da tela`). O script aceita hífen simples (`-`), meia-risca (`–`) ou travessão (`—`) cercados por espaços.
+2. **Existência da Issue**: O `#NUM_ISSUE` é validado automaticamente via API pública do GitHub para garantir que a issue realmente existe no repositório. Commits inválidos são rejeitados localmente. *(Em caso de falha de conexão ou offline, o script emitirá um `AVISO` e permitirá o commit para não travar o desenvolvimento).*
+
+---
+
+### Como Configurar e Usar
+
+Existem duas formas de configurar este validador no seu repositório local:
+
+#### Opção A: Utilizando a pasta `hooks/` da raiz do repositório (Recomendado/Entregável)
+Esta opção lê o script versionado diretamente na raiz do projeto. Qualquer alteração ou atualização no script de validação é automaticamente sincronizada via Git.
+
+1. No terminal, execute o seguinte comando na raiz do projeto para configurar o Git a ler os hooks desta pasta:
+   ```powershell
+   git config core.hooksPath hooks
+   ```
+2. Caso esteja no Linux ou macOS, dê permissão de execução ao script rodando:
+   ```bash
+   chmod +x hooks/commit-msg
+   ```
+   *(No Windows, a permissão de execução já foi adicionada ao rastreamento do Git).*
+
+#### Opção B: Utilizando a pasta interna oculta do Git (`.git/hooks/`)
+Se preferir usar o comportamento padrão do Git sem alterar a configuração global de caminhos de hooks do seu repositório local:
+
+1. Copie o script `hooks/commit-msg` para dentro da pasta oculta `.git/hooks/`:
+   * **Windows (PowerShell)**:
+     ```powershell
+     Copy-Item -Path hooks/commit-msg -Destination .git/hooks/commit-msg -Force
+     ```
+   * **Linux/macOS/Git Bash**:
+     ```bash
+     cp hooks/commit-msg .git/hooks/commit-msg
+     chmod +x .git/hooks/commit-msg
+     ```
+2. Certifique-se de remover a configuração de caminho customizado do seu repositório local (caso a tenha ativado anteriormente):
+   ```powershell
+   git config --unset core.hooksPath
+   ```
+
