@@ -1,0 +1,92 @@
+name: Verify Commits
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  check-commits:
+    name: Validar Mensagens de Commit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do Código
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validar Mensagens e Issues do PR
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Buscando os commits vinculados ao Pull Request..."
+          COMMITS_JSON=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+            "https://api.github.com/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/commits")
+
+          # Verifica se houve erro na requisição à API
+          if echo "$COMMITS_JSON" | grep -q "message.*Not Found"; then
+            echo "Erro: Não foi possível obter os commits do Pull Request #${{ github.event.pull_request.number }}"
+            exit 1
+          fi
+
+          # Obtém a quantidade de commits no PR
+          LEN=$(echo "$COMMITS_JSON" | jq '. | length')
+          if [ -z "$LEN" ] || [ "$LEN" -eq 0 ]; then
+            echo "Nenhum commit encontrado no Pull Request."
+            exit 0
+          fi
+
+          echo "Encontrados $LEN commits para verificação."
+          echo "$COMMITS_JSON" | jq -c '.[] | {sha: .sha, message: .commit.message}' > commits_temp_list.json
+
+          FAIL=0
+          while read -r commit; do
+            SHA=$(echo "$commit" | jq -r '.sha')
+            # Extrai apenas a primeira linha da mensagem do commit
+            MESSAGE=$(echo "$commit" | jq -r '.message' | head -n 1)
+
+            echo "--------------------------------------------------"
+            echo "Verificando commit: $SHA"
+            echo "Mensagem: '$MESSAGE'"
+
+            # 1. Validação de Formato (Regex)
+            # Aceita #ID [separador não-alfanumérico] Mensagem
+            REGEX="^#[0-9]+[[:space:]]+[^[:alnum:][:space:]]+[[:space:]]+.+$"
+            if [[ ! "$MESSAGE" =~ $REGEX ]]; then
+              echo "::error::[ERRO] O commit $SHA possui formato inválido!"
+              echo "Esperado: #NUM_ISSUE – MENSAGEM"
+              echo "Exemplo: #33 – Correção da tela"
+              FAIL=1
+              continue
+            fi
+
+            # 2. Extração do Número da Issue
+            ISSUE_NUM=$(echo "$MESSAGE" | grep -oE '^#[0-9]+' | cut -c 2-)
+
+            # 3. Validação de Existência da Issue
+            echo "Consultando a existência da Issue #${ISSUE_NUM}..."
+            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 \
+              -H "Authorization: token $GITHUB_TOKEN" \
+              "https://api.github.com/repos/${{ github.repository }}/issues/${ISSUE_NUM}")
+
+            if [ "$HTTP_STATUS" -eq 200 ]; then
+              echo "Sucesso: Issue #${ISSUE_NUM} validada!"
+            elif [ "$HTTP_STATUS" -eq 404 ]; then
+              echo "::error::[ERRO] A Issue #${ISSUE_NUM} informada no commit $SHA não existe no repositório!"
+              FAIL=1
+            else
+              echo "Aviso: API retornou status $HTTP_STATUS ao validar a Issue #${ISSUE_NUM}. Ignorando erro para evitar bloqueios."
+            fi
+
+          done < commits_temp_list.json
+
+          rm -f commits_temp_list.json
+
+          if [ "$FAIL" -ne 0 ]; then
+            echo "=================================================="
+            echo "ERRO: Um ou mais commits falharam na validação de formato ou de issue."
+            echo "=================================================="
+            exit 1
+          fi
+
+          echo "Todos os commits do Pull Request foram validados com sucesso!"
